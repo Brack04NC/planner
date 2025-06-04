@@ -670,8 +670,8 @@
       header.appendChild(headerSpan);
       card.appendChild(header);
 
-      // Double-click to edit list name
-      headerSpan.addEventListener('dblclick', () => {
+      // Double-click or tap to edit list name
+      function enableHeaderEdit() {
         const oldName = headerSpan.textContent;
         const inputEdit = document.createElement('input');
         inputEdit.type = 'text';
@@ -702,6 +702,11 @@
             header.replaceChild(headerSpan, inputEdit);
           }
         });
+      }
+      headerSpan.addEventListener('dblclick', enableHeaderEdit);
+      headerSpan.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        enableHeaderEdit();
       });
 
       const taskForm = document.createElement('form');
@@ -848,78 +853,83 @@
       const label = liElement.querySelector('.task-label');
       const descSpan = liElement.querySelector('.task-desc');
 
-      label.addEventListener('dblclick', () => {
-        enterTaskTextEdit(liElement, oldText, oldDesc, listId, isDone);
-      });
-      if (descSpan) {
-        descSpan.addEventListener('dblclick', () => {
-          enterTaskDescEdit(liElement, oldText, oldDesc, listId, isDone);
+      function startTextEdit() {
+        const old = label.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = old;
+        inputEdit.classList.add('task-label-edit');
+        liElement.replaceChild(inputEdit, label);
+        inputEdit.focus();
+
+        function saveEdit() {
+          const newText = inputEdit.value.trim();
+          if (newText) {
+            const listData = todosData.find(l => l.id === listId);
+            const taskObj = listData.tasks.find(t => t.text === oldText && t.desc === oldDesc && t.done === isDone);
+            if (taskObj) taskObj.text = newText;
+            saveTodos();
+            label.textContent = newText;
+            liElement.replaceChild(label, inputEdit);
+          } else {
+            liElement.replaceChild(label, inputEdit);
+          }
+        }
+
+        inputEdit.addEventListener('blur', saveEdit);
+        inputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveEdit();
+          } else if (e.key === 'Escape') {
+            liElement.replaceChild(label, inputEdit);
+          }
         });
       }
-    }
 
-    function enterTaskTextEdit(liElement, oldText, oldDesc, listId, isDone) {
-      const label = liElement.querySelector('.task-label');
-      const inputEdit = document.createElement('input');
-      inputEdit.type = 'text';
-      inputEdit.value = oldText;
-      inputEdit.classList.add('task-label-edit');
-      liElement.replaceChild(inputEdit, label);
-      inputEdit.focus();
-
-      function saveEdit() {
-        const newText = inputEdit.value.trim();
-        if (newText) {
-          const listData = todosData.find(l => l.id === listId);
-          const taskObj = listData.tasks.find(t => t.text === oldText && t.desc === oldDesc && t.done === isDone);
-          if (taskObj) taskObj.text = newText;
-          saveTodos();
-          label.textContent = newText;
-          liElement.replaceChild(label, inputEdit);
-        } else {
-          liElement.replaceChild(label, inputEdit);
-        }
-      }
-
-      inputEdit.addEventListener('blur', saveEdit);
-      inputEdit.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          saveEdit();
-        } else if (e.key === 'Escape') {
-          liElement.replaceChild(label, inputEdit);
-        }
+      label.addEventListener('dblclick', startTextEdit);
+      label.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        startTextEdit();
       });
-    }
 
-    function enterTaskDescEdit(liElement, oldText, oldDesc, listId, isDone) {
-      const descSpan = liElement.querySelector('.task-desc');
-      const inputEdit = document.createElement('input');
-      inputEdit.type = 'text';
-      inputEdit.value = oldDesc;
-      inputEdit.classList.add('task-desc-edit');
-      liElement.replaceChild(inputEdit, descSpan);
-      inputEdit.focus();
+      if (descSpan) {
+        function startDescEdit() {
+          const old = descSpan.textContent;
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = old;
+          inputEdit.classList.add('task-desc-edit');
+          liElement.replaceChild(inputEdit, descSpan);
+          inputEdit.focus();
 
-      function saveEdit() {
-        const newDesc = inputEdit.value.trim();
-        const listData = todosData.find(l => l.id === listId);
-        const taskObj = listData.tasks.find(t => t.text === oldText && t.desc === oldDesc && t.done === isDone);
-        if (taskObj) taskObj.desc = newDesc;
-        saveTodos();
-        descSpan.textContent = newDesc;
-        liElement.replaceChild(descSpan, inputEdit);
-      }
+          function saveEdit() {
+            const newDesc = inputEdit.value.trim();
+            const listData = todosData.find(l => l.id === listId);
+            const taskObj = listData.tasks.find(t => t.text === oldText && t.desc === oldDesc && t.done === isDone);
+            if (taskObj) taskObj.desc = newDesc;
+            saveTodos();
+            descSpan.textContent = newDesc;
+            liElement.replaceChild(descSpan, inputEdit);
+          }
 
-      inputEdit.addEventListener('blur', saveEdit);
-      inputEdit.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          saveEdit();
-        } else if (e.key === 'Escape') {
-          liElement.replaceChild(descSpan, inputEdit);
+          inputEdit.addEventListener('blur', saveEdit);
+          inputEdit.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              saveEdit();
+            } else if (e.key === 'Escape') {
+              liElement.replaceChild(descSpan, inputEdit);
+            }
+          });
         }
-      });
+
+        descSpan.addEventListener('dblclick', startDescEdit);
+        descSpan.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          startDescEdit();
+        });
+      }
     }
 
     function saveTodos() {
@@ -1033,106 +1043,107 @@
         saveShopping();
       });
 
-      infoDiv.addEventListener('dblclick', () => {
-        enterItemTextEdit(li, itemObj);
+      function startItemTextEdit() {
+        const oldName = infoDiv.textContent.split('\n')[0];
+        const oldQty = itemObj.qty;
+        const oldDesc = itemObj.desc;
+
+        const editDiv = document.createElement('div');
+        editDiv.classList.add('item-info-edit');
+
+        const nameInputEdit = document.createElement('input');
+        nameInputEdit.type = 'text';
+        nameInputEdit.value = oldName;
+
+        const qtyInputEdit = document.createElement('input');
+        qtyInputEdit.type = 'text';
+        qtyInputEdit.value = oldQty;
+
+        editDiv.appendChild(nameInputEdit);
+        editDiv.appendChild(qtyInputEdit);
+
+        li.replaceChild(editDiv, infoDiv);
+        nameInputEdit.focus();
+
+        function saveEdit() {
+          const newName = nameInputEdit.value.trim();
+          const newQty = qtyInputEdit.value.trim();
+          if (newName && newQty) {
+            itemObj.text = newName;
+            itemObj.qty = newQty;
+            saveShopping();
+            infoDiv.textContent = newName;
+            const spanQty = document.createElement('span');
+            spanQty.textContent = newQty;
+            infoDiv.appendChild(spanQty);
+            li.replaceChild(infoDiv, editDiv);
+          } else {
+            li.replaceChild(infoDiv, editDiv);
+          }
+        }
+
+        nameInputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            saveEdit();
+          } else if (e.key === 'Escape') {
+            li.replaceChild(infoDiv, editDiv);
+          }
+        });
+        qtyInputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            saveEdit();
+          } else if (e.key === 'Escape') {
+            li.replaceChild(infoDiv, editDiv);
+          }
+        });
+        nameInputEdit.addEventListener('blur', saveEdit);
+        qtyInputEdit.addEventListener('blur', saveEdit);
+      }
+
+      infoDiv.addEventListener('dblclick', startItemTextEdit);
+      infoDiv.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        startItemTextEdit();
       });
+
       const descSpan = li.querySelector('.item-desc');
       if (descSpan) {
-        descSpan.addEventListener('dblclick', () => {
-          enterItemDescEdit(li, itemObj);
+        function startItemDescEdit() {
+          const old = descSpan.textContent;
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = old;
+          inputEdit.classList.add('item-desc-edit');
+          li.replaceChild(inputEdit, descSpan);
+          inputEdit.focus();
+
+          function saveEdit() {
+            const newDesc = inputEdit.value.trim();
+            itemObj.desc = newDesc;
+            saveShopping();
+            descSpan.textContent = newDesc;
+            li.replaceChild(descSpan, inputEdit);
+          }
+
+          inputEdit.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              saveEdit();
+            } else if (e.key === 'Escape') {
+              li.replaceChild(descSpan, inputEdit);
+            }
+          });
+          inputEdit.addEventListener('blur', saveEdit);
+        }
+
+        descSpan.addEventListener('dblclick', startItemDescEdit);
+        descSpan.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          startItemDescEdit();
         });
       }
 
       li.appendChild(deleteBtn);
       return li;
-    }
-
-    function enterItemTextEdit(liElement, itemObj) {
-      const infoDiv = liElement.querySelector('.item-info');
-      const oldName = itemObj.text;
-      const oldQty = itemObj.qty;
-      const oldDesc = itemObj.desc;
-
-      const editDiv = document.createElement('div');
-      editDiv.classList.add('item-info-edit');
-
-      const nameInputEdit = document.createElement('input');
-      nameInputEdit.type = 'text';
-      nameInputEdit.value = oldName;
-
-      const qtyInputEdit = document.createElement('input');
-      qtyInputEdit.type = 'text';
-      qtyInputEdit.value = oldQty;
-
-      editDiv.appendChild(nameInputEdit);
-      editDiv.appendChild(qtyInputEdit);
-
-      liElement.replaceChild(editDiv, infoDiv);
-      nameInputEdit.focus();
-
-      function saveEdit() {
-        const newName = nameInputEdit.value.trim();
-        const newQty = qtyInputEdit.value.trim();
-        if (newName && newQty) {
-          itemObj.text = newName;
-          itemObj.qty = newQty;
-          saveShopping();
-          infoDiv.textContent = newName;
-          const spanQty = document.createElement('span');
-          spanQty.textContent = newQty;
-          infoDiv.appendChild(spanQty);
-          liElement.replaceChild(infoDiv, editDiv);
-        } else {
-          liElement.replaceChild(infoDiv, editDiv);
-        }
-      }
-
-      nameInputEdit.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          saveEdit();
-        } else if (e.key === 'Escape') {
-          liElement.replaceChild(infoDiv, editDiv);
-        }
-      });
-      qtyInputEdit.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          saveEdit();
-        } else if (e.key === 'Escape') {
-          liElement.replaceChild(infoDiv, editDiv);
-        }
-      });
-      nameInputEdit.addEventListener('blur', saveEdit);
-      qtyInputEdit.addEventListener('blur', saveEdit);
-    }
-
-    function enterItemDescEdit(liElement, itemObj) {
-      const descSpan = liElement.querySelector('.item-desc');
-      const oldDesc = itemObj.desc;
-
-      const inputEdit = document.createElement('input');
-      inputEdit.type = 'text';
-      inputEdit.value = oldDesc;
-      inputEdit.classList.add('item-desc-edit');
-
-      liElement.replaceChild(inputEdit, descSpan);
-      inputEdit.focus();
-
-      function saveEdit() {
-        const newDesc = inputEdit.value.trim();
-        itemObj.desc = newDesc;
-        saveShopping();
-        descSpan.textContent = newDesc;
-        liElement.replaceChild(descSpan, inputEdit);
-      }
-
-      inputEdit.addEventListener('keydown', e => {
-        if (e.key === 'Enter') {
-          saveEdit();
-        } else if (e.key === 'Escape') {
-          liElement.replaceChild(descSpan, inputEdit);
-        }
-      });
-      inputEdit.addEventListener('blur', saveEdit);
     }
 
     function saveShopping() {
@@ -1183,8 +1194,8 @@
       headerSpan.style.flex = '1';
       headerSpan.style.cursor = 'pointer';
 
-      // Double-click to edit product name
-      headerSpan.addEventListener('dblclick', () => {
+      // Double-click or tap to edit product name
+      function startProductEdit() {
         const oldName = headerSpan.textContent;
         const inputEdit = document.createElement('input');
         inputEdit.type = 'text';
@@ -1216,6 +1227,11 @@
             th.replaceChild(headerSpan, inputEdit);
           }
         });
+      }
+      headerSpan.addEventListener('dblclick', startProductEdit);
+      headerSpan.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        startProductEdit();
       });
 
       const deleteBtn = document.createElement('button');
@@ -1267,8 +1283,8 @@
       nameSpan.style.flex = '1';
       nameSpan.style.cursor = 'pointer';
 
-      // Double-click to edit store name
-      nameSpan.addEventListener('dblclick', () => {
+      // Double-click or tap to edit store name
+      function startStoreEdit() {
         const oldName = nameSpan.textContent;
         const inputEdit = document.createElement('input');
         inputEdit.type = 'text';
@@ -1300,6 +1316,11 @@
             tdName.replaceChild(nameSpan, inputEdit);
           }
         });
+      }
+      nameSpan.addEventListener('dblclick', startStoreEdit);
+      nameSpan.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        startStoreEdit();
       });
 
       const deleteBtn = document.createElement('button');
@@ -1409,7 +1430,7 @@
           headerSpan.style.flex = '1';
           headerSpan.style.cursor = 'pointer';
 
-          headerSpan.addEventListener('dblclick', () => {
+          function startProductEdit() {
             const oldName = headerSpan.textContent;
             const inputEdit = document.createElement('input');
             inputEdit.type = 'text';
@@ -1441,6 +1462,11 @@
                 th.replaceChild(headerSpan, inputEdit);
               }
             });
+          }
+          headerSpan.addEventListener('dblclick', startProductEdit);
+          headerSpan.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            startProductEdit();
           });
 
           const deleteBtn = document.createElement('button');
@@ -1464,7 +1490,7 @@
           nameSpan.style.flex = '1';
           nameSpan.style.cursor = 'pointer';
 
-          nameSpan.addEventListener('dblclick', () => {
+          function startStoreEdit() {
             const oldName = nameSpan.textContent;
             const inputEdit = document.createElement('input');
             inputEdit.type = 'text';
@@ -1496,6 +1522,11 @@
                 tdName.replaceChild(nameSpan, inputEdit);
               }
             });
+          }
+          nameSpan.addEventListener('dblclick', startStoreEdit);
+          nameSpan.addEventListener('touchend', (e) => {
+            e.preventDefault();
+            startStoreEdit();
           });
 
           const deleteBtn = document.createElement('button');
