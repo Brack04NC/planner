@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Home – To-Do, Lista della Spesa & Comparazione Prezzi</title>
+  <style>
+    /* ==========================
+       Stili Globali
+    =========================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f2f5;
+      color: #333;
+      line-height: 1.5;
+    }
+    ul {
+      list-style: none;
+    }
+
+    /* ==========================
+       Header & Navigazione
+    =========================== */
+    header {
+      background-color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    nav {
+      max-width: 900px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #007bff;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+    .nav-link {
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      font-size: 1rem;
+      color: #555;
+    }
+    .nav-link:hover,
+    .nav-link.active {
+      background-color: #e0e7ff;
+      color: #007bff;
+    }
+
+    /* ==========================
+       Sezioni Principali
+    =========================== */
+    .page {
+      display: none;
+      max-width: 900px;
+      margin: 20px auto;
+      background-color: #fff;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      padding: 20px;
+    }
+    .page.active {
+      display: block;
+    }
+    h2 {
+      margin-bottom: 20px;
+      color: #333;
+      text-align: center;
+    }
+
+    /* ==========================
+       Stili per To-Do List Multisessione
+    =========================== */
+    #todo-page .new-list-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    #todo-page .new-list-form input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #todo-page .new-list-form button {
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #todo-page .new-list-form button:hover {
+      background-color: #0056b3;
+    }
+    #todo-page #lists-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    #todo-page .todo-list-card {
+      display: flex;
+      flex-direction: column;
+      background-color: #fafafa;
+      border-radius: 8px;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+      padding: 15px;
+      height: 100%;
+    }
+    #todo-page .todo-list-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      text-align: center;
+      color: #333;
+    }
+    #todo-page .todo-list-card .task-form {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    #todo-page .todo-list-card .task-form input[type="text"] {
+      flex: 1;
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #todo-page .todo-list-card .task-form button {
+      padding: 6px 12px;
+      font-size: 14px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #todo-page .todo-list-card .task-form button:hover {
+      background-color: #218838;
+    }
+    #todo-page .list-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+    #todo-page .list-section h4 {
+      margin-bottom: 6px;
+      font-size: 1rem;
+      color: #555;
+      border-bottom: 1px solid #e2e8f0;
+      padding-bottom: 4px;
+    }
+    #todo-page .task-items {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      flex: 1;
+      overflow-y: auto;
+    }
+    #todo-page .task-items li {
+      display: flex;
+      align-items: center;
+      padding: 6px 0;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    #todo-page .task-items li:last-child {
+      border-bottom: none;
+    }
+    #todo-page .task-label,
+    #todo-page .task-label-edit {
+      margin-left: 8px;
+      flex: 1;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #todo-page .task-label-edit {
+      border: 1px solid #ccc;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    #todo-page .done .task-label {
+      text-decoration: line-through;
+      color: #888;
+    }
+    #todo-page .delete-list-button {
+      margin-top: 10px;
+      padding: 6px;
+      font-size: 12px;
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      align-self: center;
+      transition: background-color 0.2s;
+    }
+    #todo-page .delete-list-button:hover {
+      background-color: #c82333;
+    }
+
+    /* ==========================
+       Stili per Lista della Spesa
+    =========================== */
+    #shopping-page .new-item-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    #shopping-page .new-item-form input[type="text"] {
+      flex: 1 1 200px;
+      padding: 8px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #shopping-page .new-item-form button {
+      padding: 8px 16px;
+      font-size: 16px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #shopping-page .new-item-form button:hover {
+      background-color: #218838;
+    }
+    #shopping-page .list-section {
+      margin-bottom: 30px;
+    }
+    #shopping-page .list-section h4 {
+      margin-bottom: 10px;
+      color: #555;
+      border-bottom: 2px solid #eee;
+      padding-bottom: 5px;
+    }
+    #shopping-page ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    #shopping-page li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid #eee;
+    }
+    #shopping-page li:last-child {
+      border-bottom: none;
+    }
+    #shopping-page .item-info,
+    #shopping-page .item-info-edit {
+      display: flex;
+      align-items: center;
+      flex: 1;
+      margin-left: 8px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    #shopping-page .item-info-edit input[type="text"] {
+      border: 1px solid #ccc;
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    #shopping-page .item-info span {
+      margin-left: 8px;
+      color: #666;
+      font-size: 14px;
+    }
+    #shopping-page .done .item-info {
+      text-decoration: line-through;
+      color: #888;
+    }
+    #shopping-page .delete-item-button {
+      margin-left: 10px;
+      padding: 4px 8px;
+      font-size: 12px;
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: none; /* nascosto finché non è completato */
+    }
+    #shopping-page .delete-item-button:hover {
+      background-color: #c82333;
+    }
+
+    /* ==========================
+       Stili per Comparazione Prezzi
+    =========================== */
+    #comparison-page .forms-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    #comparison-page .forms-row form {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    #comparison-page .forms-row input[type="text"] {
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    #comparison-page .forms-row button {
+      padding: 6px 12px;
+      font-size: 14px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #comparison-page .forms-row button:hover {
+      background-color: #0069d9;
+    }
+    #comparison-page #comparison-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    #comparison-page #comparison-table th,
+    #comparison-page #comparison-table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: center;
+      font-size: 14px;
+    }
+    #comparison-page #comparison-table th {
+      background-color: #f2f2f2;
+      color: #333;
+    }
+    #comparison-page #comparison-table td input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 4px;
+      font-size: 14px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      text-align: center;
+    }
+    #comparison-page .delete-button {
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #comparison-page .delete-button:hover {
+      background-color: #c82333;
+    }
+    #comparison-page .lowest-price {
+      background-color: #d4edda; /* verde chiaro */
+    }
+
+    /* ==========================
+       Responsive
+    =========================== */
+    @media (max-width: 600px) {
+      nav {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .nav-links {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      #todo-page .todo-list-card,
+      #shopping-page li,
+      #comparison-page #comparison-table,
+      #comparison-page .forms-row {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- ==========================
+       HEADER E NAVIGAZIONE
+  =========================== -->
+  <header>
+    <nav>
+      <div class="logo">MyPlanner</div>
+      <div class="nav-links">
+        <div class="nav-link active" data-target="todo-page">Cose da Fare</div>
+        <div class="nav-link" data-target="shopping-page">Lista della Spesa</div>
+        <div class="nav-link" data-target="comparison-page">Comparazione Prezzi</div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- ==========================
+       SEZIONE TO-DO LIST (PAGINA PREDEFINITA)
+  =========================== -->
+  <section id="todo-page" class="page active">
+    <h2>Cose da Fare</h2>
+    <!-- Form per creare nuove liste to-do -->
+    <form id="new-list-form" class="new-list-form">
+      <input
+        type="text"
+        id="new-list-input"
+        placeholder="Nome della nuova lista..."
+        required
+      />
+      <button type="submit">Crea Lista</button>
+    </form>
+    <!-- Contenitore delle liste -->
+    <div id="lists-container"></div>
+  </section>
+
+  <!-- ==========================
+       SEZIONE LISTA DELLA SPESA
+  =========================== -->
+  <section id="shopping-page" class="page">
+    <h2>Lista della Spesa</h2>
+    <!-- Form per inserire nuovi prodotti con quantità/peso -->
+    <form id="new-item-form" class="new-item-form">
+      <input
+        type="text"
+        id="item-name-input"
+        placeholder="Nome prodotto..."
+        required
+      />
+      <input
+        type="text"
+        id="item-qty-input"
+        placeholder="Quantità o peso..."
+        required
+      />
+      <button type="submit">Aggiungi</button>
+    </form>
+    <div class="list-section">
+      <h4>Da Comprare</h4>
+      <ul id="shopping-todo-list"></ul>
+    </div>
+    <div class="list-section">
+      <h4>Comprato</h4>
+      <ul id="shopping-done-list"></ul>
+    </div>
+  </section>
+
+  <!-- ==========================
+       SEZIONE COMPARAZIONE PREZZI
+  =========================== -->
+  <section id="comparison-page" class="page">
+    <h2>Comparazione Prezzi</h2>
+    <div class="forms-row">
+      <!-- Aggiungi Prodotto -->
+      <form id="add-product-form">
+        <label for="product-name-input">Nuovo Prodotto:</label>
+        <input
+          type="text"
+          id="product-name-input"
+          placeholder="Nome prodotto..."
+          required
+        />
+        <button type="submit">Aggiungi Prodotto</button>
+      </form>
+      <!-- Aggiungi Supermercato -->
+      <form id="add-store-form">
+        <label for="store-name-input">Nuovo Supermercato:</label>
+        <input
+          type="text"
+          id="store-name-input"
+          placeholder="Nome supermercato..."
+          required
+        />
+        <button type="submit">Aggiungi Supermercato</button>
+      </form>
+    </div>
+    <table id="comparison-table">
+      <thead>
+        <tr>
+          <th>Supermercato</th>
+          <!-- Intestazioni dei prodotti aggiunte dinamicamente -->
+        </tr>
+      </thead>
+      <tbody>
+        <!-- Righe dei supermercati aggiunte dinamicamente -->
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ==========================
+       SCRIPT PER TUTTE LE PAGINE
+  =========================== -->
+  <script>
+    /* ==========================
+       Funzione di Navigazione tra sezioni
+    =========================== */
+    const navLinks = document.querySelectorAll('.nav-link');
+    const pages = document.querySelectorAll('.page');
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.forEach(l => l.classList.remove('active'));
+        pages.forEach(p => p.classList.remove('active'));
+        link.classList.add('active');
+        const targetId = link.getAttribute('data-target');
+        document.getElementById(targetId).classList.add('active');
+      });
+    });
+
+    /* ==========================
+       STORAGE KEYS
+    =========================== */
+    const TODO_STORAGE_KEY = 'myplanner_todos';
+    const SHOPPING_STORAGE_KEY = 'myplanner_shopping';
+    const COMP_STORAGE_KEY = 'myplanner_comparison';
+
+    /* ==========================
+       Codice per To-Do List Multisessione
+    =========================== */
+    const newListForm = document.getElementById('new-list-form');
+    const newListInput = document.getElementById('new-list-input');
+    const listsContainer = document.getElementById('lists-container');
+    let listCounter = 0;
+    let todosData = []; 
+    // Structure: [ { id, name, tasks: [ { text, done } ] } ]
+
+    newListForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const listName = newListInput.value.trim();
+      if (!listName) return;
+      listCounter++;
+      const thisListId = 'todo-list-' + Date.now() + '-' + listCounter;
+      const newListObj = { id: thisListId, name: listName, tasks: [] };
+      todosData.push(newListObj);
+      saveTodos();
+      createTodoList(newListObj);
+      newListInput.value = '';
+      newListInput.focus();
+    });
+
+    function createTodoList(listObj) {
+      const card = document.createElement('div');
+      card.classList.add('todo-list-card');
+      card.setAttribute('data-list-id', listObj.id);
+
+      const header = document.createElement('h3');
+      header.textContent = listObj.name;
+      card.appendChild(header);
+
+      const taskForm = document.createElement('form');
+      taskForm.classList.add('task-form');
+      taskForm.setAttribute('data-list-id', listObj.id);
+
+      const taskInput = document.createElement('input');
+      taskInput.type = 'text';
+      taskInput.placeholder = 'Nuova attività...';
+      taskInput.required = true;
+
+      const addTaskBtn = document.createElement('button');
+      addTaskBtn.textContent = 'Aggiungi';
+
+      taskForm.appendChild(taskInput);
+      taskForm.appendChild(addTaskBtn);
+      card.appendChild(taskForm);
+
+      const todoSection = document.createElement('div');
+      todoSection.classList.add('list-section');
+      const todoHeader = document.createElement('h4');
+      todoHeader.textContent = 'DA FARE';
+      const todoUl = document.createElement('ul');
+      todoUl.classList.add('task-items');
+      todoUl.setAttribute('data-type', 'todo');
+      todoSection.appendChild(todoHeader);
+      todoSection.appendChild(todoUl);
+      card.appendChild(todoSection);
+
+      const doneSection = document.createElement('div');
+      doneSection.classList.add('list-section');
+      const doneHeader = document.createElement('h4');
+      doneHeader.textContent = 'FATTO';
+      const doneUl = document.createElement('ul');
+      doneUl.classList.add('task-items');
+      doneUl.setAttribute('data-type', 'done');
+      doneSection.appendChild(doneHeader);
+      doneSection.appendChild(doneUl);
+      card.appendChild(doneSection);
+
+      const deleteListBtn = document.createElement('button');
+      deleteListBtn.classList.add('delete-list-button');
+      deleteListBtn.textContent = 'Elimina Lista';
+      deleteListBtn.addEventListener('click', () => {
+        if (confirm(`Sei sicuro di voler eliminare la lista “${listObj.name}”?`)) {
+          listsContainer.removeChild(card);
+          todosData = todosData.filter(l => l.id !== listObj.id);
+          saveTodos();
+        }
+      });
+      card.appendChild(deleteListBtn);
+
+      listsContainer.appendChild(card);
+      configureTodoListeners(card, listObj);
+
+      // Ripopolare eventuali task salvate
+      listObj.tasks.forEach(task => {
+        const li = createTaskElement(task.text, todoUl, doneUl, listObj.id);
+        if (task.done) {
+          li.querySelector('input[type="checkbox"]').checked = true;
+          li.classList.add('done');
+          doneUl.appendChild(li);
+          showTaskEdit(li, task.text, listObj.id, task.done);
+        } else {
+          todoUl.appendChild(li);
+          showTaskEdit(li, task.text, listObj.id, task.done);
+        }
+      });
+    }
+
+    function configureTodoListeners(cardElement, listObj) {
+      const listId = cardElement.getAttribute('data-list-id');
+      const form = cardElement.querySelector(`form[data-list-id="${listId}"]`);
+      const todoUl = cardElement.querySelector('ul[data-type="todo"]');
+      const doneUl = cardElement.querySelector('ul[data-type="done"]');
+
+      form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const input = form.querySelector('input[type="text"]');
+        const text = input.value.trim();
+        if (!text) return;
+        const li = createTaskElement(text, todoUl, doneUl, listId);
+        todoUl.appendChild(li);
+        // Aggiorna data e storage
+        const listData = todosData.find(l => l.id === listId);
+        listData.tasks.push({ text, done: false });
+        saveTodos();
+        showTaskEdit(li, text, listId, false);
+        input.value = '';
+        input.focus();
+      });
+    }
+
+    function createTaskElement(text, todoContainer, doneContainer, listId) {
+      const li = document.createElement('li');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      const label = document.createElement('span');
+      label.textContent = text;
+      label.classList.add('task-label');
+
+      checkbox.addEventListener('change', () => {
+        const listData = todosData.find(l => l.id === listId);
+        const taskObj = listData.tasks.find(t => t.text === text && t.done === !checkbox.checked);
+        if (checkbox.checked) {
+          li.classList.add('done');
+          doneContainer.appendChild(li);
+          if (taskObj) taskObj.done = true;
+        } else {
+          li.classList.remove('done');
+          todoContainer.appendChild(li);
+          if (taskObj) taskObj.done = false;
+        }
+        saveTodos();
+      });
+
+      li.appendChild(checkbox);
+      li.appendChild(label);
+      return li;
+    }
+
+    function showTaskEdit(liElement, taskText, listId, isDone) {
+      // Abilita modifica al doppio clic sul testo
+      const label = liElement.querySelector('.task-label');
+      label.addEventListener('dblclick', () => {
+        const oldText = label.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = oldText;
+        inputEdit.classList.add('task-label-edit');
+        liElement.replaceChild(inputEdit, label);
+        inputEdit.focus();
+
+        function saveEdit() {
+          const newText = inputEdit.value.trim();
+          if (newText) {
+            // Aggiorna dati in memoria e storage
+            const listData = todosData.find(l => l.id === listId);
+            const taskObj = listData.tasks.find(t => t.text === oldText && t.done === isDone);
+            if (taskObj) taskObj.text = newText;
+            saveTodos();
+            // Ripristina span
+            label.textContent = newText;
+            liElement.replaceChild(label, inputEdit);
+          } else {
+            // Se vuoto, ripristina vecchio
+            liElement.replaceChild(label, inputEdit);
+          }
+        }
+
+        inputEdit.addEventListener('blur', saveEdit);
+        inputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveEdit();
+          } else if (e.key === 'Escape') {
+            // Annulla modifica
+            liElement.replaceChild(label, inputEdit);
+          }
+        });
+      });
+    }
+
+    function saveTodos() {
+      localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todosData));
+    }
+
+    function loadTodos() {
+      const saved = localStorage.getItem(TODO_STORAGE_KEY);
+      if (saved) {
+        todosData = JSON.parse(saved);
+        todosData.forEach(listObj => {
+          // Aggiorna counter per evitare ID duplicati
+          const parts = listObj.id.split('-');
+          const ts = parseInt(parts[2]);
+          if (!isNaN(ts)) listCounter = Math.max(listCounter, ts);
+          createTodoList(listObj);
+        });
+      }
+    }
+
+    /* ==========================
+       Codice per Lista della Spesa
+    =========================== */
+    const shoppingForm = document.getElementById('new-item-form');
+    const nameInput = document.getElementById('item-name-input');
+    const qtyInput = document.getElementById('item-qty-input');
+    const shoppingTodoList = document.getElementById('shopping-todo-list');
+    const shoppingDoneList = document.getElementById('shopping-done-list');
+    let shoppingData = [];
+    // Structure: [ { text, qty, done } ]
+
+    shoppingForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const nomeProdotto = nameInput.value.trim();
+      const quantitaProdotto = qtyInput.value.trim();
+      if (!nomeProdotto || !quantitaProdotto) return;
+      const itemObj = { text: nomeProdotto, qty: quantitaProdotto, done: false };
+      shoppingData.push(itemObj);
+      saveShopping();
+      const itemElement = createShoppingItem(itemObj);
+      shoppingTodoList.appendChild(itemElement);
+      nameInput.value = '';
+      qtyInput.value = '';
+      nameInput.focus();
+    });
+
+    function createShoppingItem(itemObj) {
+      const li = document.createElement('li');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+
+      const infoDiv = document.createElement('div');
+      infoDiv.classList.add('item-info');
+      infoDiv.textContent = itemObj.text;
+      const qtySpan = document.createElement('span');
+      qtySpan.textContent = itemObj.qty;
+      infoDiv.appendChild(qtySpan);
+
+      // Pulsante di eliminazione (nascosto inizialmente)
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Elimina';
+      deleteBtn.classList.add('delete-item-button');
+
+      // Se cliccato, rimuove l'elemento e aggiorna lo storage
+      deleteBtn.addEventListener('click', () => {
+        li.remove();
+        shoppingData = shoppingData.filter(i => !(i.text === itemObj.text && i.qty === itemObj.qty && i.done === true));
+        saveShopping();
+      });
+
+      // Impostazione iniziale: se itemObj.done, spostalo in elenco "Comprato" e mostra il pulsante
+      if (itemObj.done) {
+        checkbox.checked = true;
+        li.classList.add('done');
+        shoppingDoneList.appendChild(li);
+        deleteBtn.style.display = 'inline-block';
+      }
+
+      // Cambio stato completato
+      checkbox.addEventListener('change', () => {
+        itemObj.done = checkbox.checked;
+        if (checkbox.checked) {
+          li.classList.add('done');
+          shoppingDoneList.appendChild(li);
+          deleteBtn.style.display = 'inline-block';
+        } else {
+          li.classList.remove('done');
+          shoppingTodoList.appendChild(li);
+          deleteBtn.style.display = 'none';
+        }
+        saveShopping();
+      });
+
+      // Doppio clic sul nome prodotto per modificare
+      infoDiv.addEventListener('dblclick', () => {
+        enterEditMode(li, itemObj);
+      });
+
+      li.appendChild(checkbox);
+      li.appendChild(infoDiv);
+      li.appendChild(deleteBtn);
+      return li;
+    }
+
+    function enterEditMode(liElement, itemObj) {
+      const infoDiv = liElement.querySelector('.item-info');
+      const oldName = itemObj.text;
+      const oldQty = itemObj.qty;
+      // Crea contenitore di modifica
+      const editDiv = document.createElement('div');
+      editDiv.classList.add('item-info-edit');
+
+      const nameInputEdit = document.createElement('input');
+      nameInputEdit.type = 'text';
+      nameInputEdit.value = oldName;
+
+      const qtyInputEdit = document.createElement('input');
+      qtyInputEdit.type = 'text';
+      qtyInputEdit.value = oldQty;
+
+      editDiv.appendChild(nameInputEdit);
+      editDiv.appendChild(qtyInputEdit);
+
+      liElement.replaceChild(editDiv, infoDiv);
+      nameInputEdit.focus();
+
+      function saveEdit() {
+        const newName = nameInputEdit.value.trim();
+        const newQty = qtyInputEdit.value.trim();
+        if (newName && newQty) {
+          itemObj.text = newName;
+          itemObj.qty = newQty;
+          saveShopping();
+          // Ripristina infoDiv
+          infoDiv.textContent = newName;
+          const spanQty = document.createElement('span');
+          spanQty.textContent = newQty;
+          infoDiv.appendChild(spanQty);
+          liElement.replaceChild(infoDiv, editDiv);
+        } else {
+          // Annulla modifica se vuoto
+          liElement.replaceChild(infoDiv, editDiv);
+        }
+      }
+
+      nameInputEdit.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          saveEdit();
+        } else if (e.key === 'Escape') {
+          liElement.replaceChild(infoDiv, editDiv);
+        }
+      });
+      qtyInputEdit.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          saveEdit();
+        } else if (e.key === 'Escape') {
+          liElement.replaceChild(infoDiv, editDiv);
+        }
+      });
+      nameInputEdit.addEventListener('blur', saveEdit);
+      qtyInputEdit.addEventListener('blur', saveEdit);
+    }
+
+    function saveShopping() {
+      localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(shoppingData));
+    }
+
+    function loadShopping() {
+      const saved = localStorage.getItem(SHOPPING_STORAGE_KEY);
+      if (saved) {
+        shoppingData = JSON.parse(saved);
+        shoppingData.forEach(itemObj => {
+          const li = createShoppingItem(itemObj);
+          if (itemObj.done) {
+            shoppingDoneList.appendChild(li);
+          } else {
+            shoppingTodoList.appendChild(li);
+          }
+        });
+      }
+    }
+
+    /* ==========================
+       Codice per Comparazione Prezzi
+    =========================== */
+    const addProductForm = document.getElementById('add-product-form');
+    const productNameInput = document.getElementById('product-name-input');
+    const addStoreForm = document.getElementById('add-store-form');
+    const storeNameInput = document.getElementById('store-name-input');
+    const comparisonTable = document.getElementById('comparison-table');
+    const theadRow = comparisonTable.querySelector('thead tr');
+    const tbodyComp = comparisonTable.querySelector('tbody');
+
+    let compData = { products: [], stores: [] };
+    // products: [ productName, ... ]
+    // stores: [ { name, prices: [ stringValue|"" , ... ] }, ... ]
+
+    addProductForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const productName = productNameInput.value.trim();
+      if (!productName) return;
+      compData.products.push(productName);
+      compData.stores.forEach(storeObj => storeObj.prices.push(""));
+
+      const th = document.createElement('th');
+      th.textContent = productName;
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '✕';
+      deleteBtn.classList.add('delete-button');
+      deleteBtn.title = 'Rimuovi prodotto';
+      deleteBtn.style.marginLeft = '6px';
+      deleteBtn.addEventListener('click', () => {
+        removeProductColumn(productName);
+      });
+      th.appendChild(deleteBtn);
+      theadRow.appendChild(th);
+
+      Array.from(tbodyComp.rows).forEach((row, rowIndex) => {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = '€';
+        input.value = compData.stores[rowIndex].prices[compData.products.length - 1];
+        input.addEventListener('input', () => {
+          compData.stores[rowIndex].prices[compData.products.length - 1] = input.value;
+          saveComparison();
+          updateHighlights();
+        });
+        td.appendChild(input);
+        row.appendChild(td);
+      });
+
+      saveComparison();
+      productNameInput.value = '';
+      productNameInput.focus();
+      updateHighlights();
+    });
+
+    addStoreForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const storeName = storeNameInput.value.trim();
+      if (!storeName) return;
+
+      const newStoreObj = { name: storeName, prices: Array(compData.products.length).fill("") };
+      compData.stores.push(newStoreObj);
+
+      const tr = document.createElement('tr');
+      const tdName = document.createElement('td');
+      tdName.textContent = storeName;
+      tdName.style.display = 'flex';
+      tdName.style.alignItems = 'center';
+      tdName.style.justifyContent = 'space-between';
+
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = '✕';
+      deleteBtn.classList.add('delete-button');
+      deleteBtn.title = 'Rimuovi supermercato';
+      deleteBtn.addEventListener('click', () => {
+        tr.remove();
+        compData.stores = compData.stores.filter(s => s.name !== storeName);
+        saveComparison();
+        updateHighlights();
+      });
+
+      tdName.appendChild(deleteBtn);
+      tr.appendChild(tdName);
+
+      newStoreObj.prices.forEach((priceVal, idx) => {
+        const td = document.createElement('td');
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = '€';
+        input.value = priceVal;
+        input.addEventListener('input', () => {
+          newStoreObj.prices[idx] = input.value;
+          saveComparison();
+          updateHighlights();
+        });
+        td.appendChild(input);
+        tr.appendChild(td);
+      });
+
+      tbodyComp.appendChild(tr);
+      saveComparison();
+      storeNameInput.value = '';
+      storeNameInput.focus();
+    });
+
+    function removeProductColumn(productName) {
+      const index = compData.products.indexOf(productName);
+      if (index === -1) return;
+      compData.products.splice(index, 1);
+      compData.stores.forEach(storeObj => storeObj.prices.splice(index, 1));
+
+      const ths = Array.from(theadRow.querySelectorAll('th'));
+      const thToRemove = ths[index + 1];
+      theadRow.removeChild(thToRemove);
+
+      Array.from(tbodyComp.rows).forEach(row => {
+        row.removeChild(row.children[index + 1]);
+      });
+
+      saveComparison();
+      updateHighlights();
+    }
+
+    function updateHighlights() {
+      const rowCount = compData.stores.length;
+      const colCount = compData.products.length;
+
+      // Pulisci tutte le evidenziazioni
+      Array.from(tbodyComp.rows).forEach(row => {
+        for (let c = 1; c <= colCount; c++) {
+          row.children[c].classList.remove('lowest-price');
+        }
+      });
+
+      // Per ogni colonna di prodotto
+      for (let colIndex = 0; colIndex < colCount; colIndex++) {
+        let minPrice = Infinity;
+        let candidateCells = [];
+
+        Array.from(tbodyComp.rows).forEach((row, rowIndex) => {
+          const cell = row.children[colIndex + 1];
+          const input = cell.querySelector('input');
+          const val = parseFloat(input.value.replace(',', '.'));
+          if (!isNaN(val)) {
+            if (val < minPrice) {
+              minPrice = val;
+              candidateCells = [cell];
+            } else if (val === minPrice) {
+              candidateCells.push(cell);
+            }
+          }
+        });
+
+        candidateCells.forEach(cell => {
+          cell.classList.add('lowest-price');
+        });
+      }
+    }
+
+    function saveComparison() {
+      localStorage.setItem(COMP_STORAGE_KEY, JSON.stringify(compData));
+    }
+
+    function loadComparison() {
+      const saved = localStorage.getItem(COMP_STORAGE_KEY);
+      if (saved) {
+        compData = JSON.parse(saved);
+        // Ricrea intestazioni prodotti
+        compData.products.forEach(productName => {
+          const th = document.createElement('th');
+          th.textContent = productName;
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = '✕';
+          deleteBtn.classList.add('delete-button');
+          deleteBtn.title = 'Rimuovi prodotto';
+          deleteBtn.style.marginLeft = '6px';
+          deleteBtn.addEventListener('click', () => {
+            removeProductColumn(productName);
+          });
+          th.appendChild(deleteBtn);
+          theadRow.appendChild(th);
+        });
+        // Ricrea righe supermercati
+        compData.stores.forEach(storeObj => {
+          const tr = document.createElement('tr');
+          const tdName = document.createElement('td');
+          tdName.textContent = storeObj.name;
+          tdName.style.display = 'flex';
+          tdName.style.alignItems = 'center';
+          tdName.style.justifyContent = 'space-between';
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = '✕';
+          deleteBtn.classList.add('delete-button');
+          deleteBtn.title = 'Rimuovi supermercato';
+          deleteBtn.addEventListener('click', () => {
+            tr.remove();
+            compData.stores = compData.stores.filter(s => s.name !== storeObj.name);
+            saveComparison();
+            updateHighlights();
+          });
+
+          tdName.appendChild(deleteBtn);
+          tr.appendChild(tdName);
+
+          storeObj.prices.forEach((priceVal, idx) => {
+            const td = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = '€';
+            input.value = priceVal;
+            input.addEventListener('input', () => {
+              storeObj.prices[idx] = input.value;
+              saveComparison();
+              updateHighlights();
+            });
+            td.appendChild(input);
+            tr.appendChild(td);
+          });
+
+          tbodyComp.appendChild(tr);
+        });
+        updateHighlights();
+      }
+    }
+
+    /* ==========================
+       Inizializzazione all'avvio
+    =========================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      loadTodos();
+      loadShopping();
+      loadComparison();
+    });
+  </script>
+</body>
+</html>
