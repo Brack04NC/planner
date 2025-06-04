@@ -5,37 +5,43 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MyPlanner – To-Do, Lista della Spesa & Comparazione Prezzi</title>
   <style>
-    /* ==========================
-       Stili Globali
-    =========================== */
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
+    :root {
+      --bg-color-light: #f0f2f5;
+      --text-color-light: #333;
+      --card-color-light: #fff;
+      --border-color-light: #ddd;
+
+      --bg-color-dark: #1e1e1e;
+      --text-color-dark: #e0e0e0;
+      --card-color-dark: #2c2c2c;
+      --border-color-dark: #444;
     }
     body {
+      margin: 0;
+      padding: 0;
       font-family: Arial, sans-serif;
-      background-color: #f0f2f5;
-      color: #333;
-      line-height: 1.5;
+      background-color: var(--bg-color-light);
+      color: var(--text-color-light);
+      transition: background-color 0.3s, color 0.3s;
     }
-    ul {
-      list-style: none;
+    body.dark {
+      background-color: var(--bg-color-dark);
+      color: var(--text-color-dark);
     }
-
-    /* ==========================
-       Header & Navigazione
-    =========================== */
     header {
-      background-color: #fff;
+      background-color: var(--card-color-light);
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
       position: sticky;
       top: 0;
       z-index: 100;
+      transition: background-color 0.3s;
+    }
+    body.dark header {
+      background-color: var(--card-color-dark);
     }
     nav {
       max-width: 900px;
-      margin: 0 auto;
+      margin: auto;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -54,58 +60,72 @@
       padding: 8px 12px;
       border-radius: 4px;
       cursor: pointer;
-      transition: background-color 0.2s;
+      transition: background-color 0.2s, color 0.2s;
       font-size: 1rem;
-      color: #555;
     }
-    .nav-link:hover,
     .nav-link.active {
       background-color: #e0e7ff;
       color: #007bff;
     }
+    body.dark .nav-link.active {
+      background-color: #444;
+      color: #66aaff;
+    }
 
-    /* ==========================
-       Sezioni Principali
-    =========================== */
-    .page {
-      display: none;
+    .container {
       max-width: 900px;
       margin: 20px auto;
-      background-color: #fff;
+      padding: 0 20px;
+    }
+
+    h2 {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+
+    .page {
+      display: none;
+      background-color: var(--card-color-light);
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
+      margin-bottom: 40px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark .page {
+      background-color: var(--card-color-dark);
+      color: var(--text-color-dark);
     }
     .page.active {
       display: block;
     }
-    h2 {
-      margin-bottom: 20px;
-      color: #333;
-      text-align: center;
-    }
 
     /* ==========================
-       Stili per To-Do List Multisessione
+       To-Do List Styles
     =========================== */
     #todo-page .new-list-form {
       display: flex;
       gap: 10px;
-      margin-bottom: 20px;
-      justify-content: center;
       flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
     }
-    #todo-page .new-list-form input[type="text"],
-    #todo-page .new-list-form input[type="description"] {
+    #todo-page .new-list-form input[type="text"] {
       flex: 1 1 200px;
       padding: 8px;
-      font-size: 16px;
-      border: 1px solid #ccc;
+      font-size: 14px;
+      border: 1px solid var(--border-color-light);
       border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s, background-color 0.3s, color 0.3s;
+    }
+    body.dark #todo-page .new-list-form input {
+      border-color: var(--border-color-dark);
     }
     #todo-page .new-list-form button {
       padding: 8px 16px;
-      font-size: 16px;
+      font-size: 14px;
       background-color: #007bff;
       color: #fff;
       border: none;
@@ -124,17 +144,19 @@
     #todo-page .todo-list-card {
       display: flex;
       flex-direction: column;
-      background-color: #fafafa;
+      border: 1px solid var(--border-color-light);
       border-radius: 8px;
-      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
       padding: 15px;
-      height: 100%;
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+    body.dark #todo-page .todo-list-card {
+      border-color: var(--border-color-dark);
     }
     #todo-page .todo-list-card h3 {
       font-size: 1.2rem;
       margin-bottom: 12px;
       text-align: center;
-      color: #333;
+      cursor: pointer;
     }
     #todo-page .task-form {
       display: flex;
@@ -146,13 +168,19 @@
     #todo-page .task-form input[name="description"] {
       flex: 1 1 120px;
       padding: 6px;
-      font-size: 14px;
-      border: 1px solid #ccc;
+      font-size: 13px;
+      border: 1px solid var(--border-color-light);
       border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #todo-page .task-form input {
+      border-color: var(--border-color-dark);
     }
     #todo-page .task-form button {
       padding: 6px 12px;
-      font-size: 14px;
+      font-size: 13px;
       background-color: #28a745;
       color: #fff;
       border: none;
@@ -171,10 +199,12 @@
     }
     #todo-page .list-section h4 {
       margin-bottom: 6px;
-      font-size: 1rem;
-      color: #555;
-      border-bottom: 1px solid #e2e8f0;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--border-color-light);
       padding-bottom: 4px;
+    }
+    body.dark #todo-page .list-section h4 {
+      border-color: var(--border-color-dark);
     }
     #todo-page .task-items {
       list-style: none;
@@ -187,7 +217,10 @@
       display: flex;
       flex-direction: column;
       padding: 6px 0;
-      border-bottom: 1px solid #e2e8f0;
+      border-bottom: 1px solid var(--border-color-light);
+    }
+    body.dark #todo-page .task-items li {
+      border-color: var(--border-color-dark);
     }
     #todo-page .task-items li:last-child {
       border-bottom: none;
@@ -195,29 +228,34 @@
     #todo-page .task-content {
       display: flex;
       align-items: center;
+      gap: 8px;
     }
     #todo-page .task-label,
     #todo-page .task-label-edit {
-      margin-left: 8px;
       flex: 1;
       font-size: 14px;
       cursor: pointer;
     }
     #todo-page .task-desc,
     #todo-page .task-desc-edit {
-      margin-left: 32px;
+      margin-left: 24px;
       font-size: 12px;
-      color: #666;
+      color: gray;
       cursor: pointer;
     }
     #todo-page .task-label-edit,
     #todo-page .task-desc-edit {
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color-light);
       padding: 2px 4px;
       border-radius: 4px;
       font-size: 14px;
-      width: calc(100% - 12px);
-      margin: 2px 0;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #todo-page .task-label-edit,
+    body.dark #todo-page .task-desc-edit {
+      border-color: var(--border-color-dark);
     }
     #todo-page .done .task-label {
       text-decoration: line-through;
@@ -240,7 +278,7 @@
     }
 
     /* ==========================
-       Stili per Lista della Spesa
+       Lista della Spesa Styles
     =========================== */
     #shopping-page .new-item-form {
       display: flex;
@@ -253,13 +291,19 @@
     #shopping-page .new-item-form input[name="description"] {
       flex: 1 1 150px;
       padding: 8px;
-      font-size: 16px;
-      border: 1px solid #ccc;
+      font-size: 14px;
+      border: 1px solid var(--border-color-light);
       border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #shopping-page .new-item-form input {
+      border-color: var(--border-color-dark);
     }
     #shopping-page .new-item-form button {
       padding: 8px 16px;
-      font-size: 16px;
+      font-size: 14px;
       background-color: #28a745;
       color: #fff;
       border: none;
@@ -271,13 +315,16 @@
       background-color: #218838;
     }
     #shopping-page .list-section {
-      margin-bottom: 30px;
+      margin-bottom: 20px;
     }
     #shopping-page .list-section h4 {
       margin-bottom: 10px;
-      color: #555;
-      border-bottom: 2px solid #eee;
+      font-size: 0.95rem;
+      border-bottom: 2px solid var(--border-color-light);
       padding-bottom: 5px;
+    }
+    body.dark #shopping-page .list-section h4 {
+      border-color: var(--border-color-dark);
     }
     #shopping-page ul {
       list-style: none;
@@ -288,7 +335,10 @@
       display: flex;
       flex-direction: column;
       padding: 8px 0;
-      border-bottom: 1px solid #eee;
+      border-bottom: 1px solid var(--border-color-light);
+    }
+    body.dark #shopping-page li {
+      border-color: var(--border-color-dark);
     }
     #shopping-page li:last-child {
       border-bottom: none;
@@ -296,41 +346,44 @@
     #shopping-page .item-content {
       display: flex;
       align-items: center;
+      gap: 8px;
     }
     #shopping-page .item-info,
     #shopping-page .item-info-edit {
       display: flex;
       align-items: baseline;
-      flex: 1;
-      margin-left: 8px;
-      font-size: 16px;
-      cursor: pointer;
       gap: 8px;
+      flex: 1;
+      font-size: 14px;
+      cursor: pointer;
     }
     #shopping-page .item-desc,
     #shopping-page .item-desc-edit {
-      margin-left: 32px;
+      margin-left: 24px;
       font-size: 12px;
-      color: #666;
+      color: gray;
       cursor: pointer;
     }
     #shopping-page .item-info-edit input[type="text"],
     #shopping-page .item-info-edit input[name="description"] {
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color-light);
       padding: 2px 4px;
       border-radius: 4px;
       font-size: 14px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
     }
-    #shopping-page .item-info span {
-      color: #666;
-      font-size: 14px;
+    body.dark #shopping-page .item-info-edit input {
+      border-color: var(--border-color-dark);
     }
     #shopping-page .done .item-info {
       text-decoration: line-through;
       color: #888;
     }
     #shopping-page .delete-item-button {
-      margin-left: 10px;
+      margin-top: 6px;
+      align-self: flex-end;
       padding: 4px 8px;
       font-size: 12px;
       background-color: #dc3545;
@@ -339,14 +392,14 @@
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.2s;
-      display: none; /* nascosto finché non è completato */
+      display: none;
     }
     #shopping-page .delete-item-button:hover {
       background-color: #c82333;
     }
 
     /* ==========================
-       Stili per Comparazione Prezzi
+       Comparazione Prezzi Styles
     =========================== */
     #comparison-page .forms-row {
       display: flex;
@@ -363,8 +416,14 @@
     #comparison-page .forms-row input[type="text"] {
       padding: 6px;
       font-size: 14px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color-light);
       border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #comparison-page .forms-row input {
+      border-color: var(--border-color-dark);
     }
     #comparison-page .forms-row button {
       padding: 6px 12px;
@@ -383,26 +442,58 @@
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
+      transition: background-color 0.3s, color 0.3s;
     }
     #comparison-page #comparison-table th,
     #comparison-page #comparison-table td {
-      border: 1px solid #ddd;
+      border: 1px solid var(--border-color-light);
       padding: 8px;
       text-align: center;
       font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    body.dark #comparison-page #comparison-table th,
+    body.dark #comparison-page #comparison-table td {
+      border-color: var(--border-color-dark);
     }
     #comparison-page #comparison-table th {
-      background-color: #f2f2f2;
-      color: #333;
+      background-color: var(--card-color-light);
+      cursor: pointer;
+      position: relative;
+    }
+    body.dark #comparison-page #comparison-table th {
+      background-color: var(--card-color-dark);
+    }
+    #comparison-page #comparison-table th span {
+      flex: 1;
+    }
+    #comparison-page #comparison-table th input.edit-input {
+      width: 80%;
+      padding: 4px;
+      font-size: 13px;
+      border: 1px solid var(--border-color-light);
+      border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #comparison-page #comparison-table th input {
+      border-color: var(--border-color-dark);
     }
     #comparison-page #comparison-table td input[type="text"] {
       width: 100%;
       box-sizing: border-box;
       padding: 4px;
       font-size: 14px;
-      border: 1px solid #ccc;
+      border: 1px solid var(--border-color-light);
       border-radius: 4px;
       text-align: center;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #comparison-page #comparison-table td input {
+      border-color: var(--border-color-dark);
     }
     #comparison-page .delete-button {
       background-color: #dc3545;
@@ -421,9 +512,7 @@
       background-color: #d4edda; /* verde chiaro */
     }
 
-    /* ==========================
-       Responsive
-    =========================== */
+    /* Responsive */
     @media (max-width: 600px) {
       nav {
         flex-direction: column;
@@ -443,9 +532,6 @@
   </style>
 </head>
 <body>
-  <!-- ==========================
-       HEADER E NAVIGAZIONE
-  =========================== -->
   <header>
     <nav>
       <div class="logo">MyPlanner</div>
@@ -453,115 +539,69 @@
         <div class="nav-link active" data-target="todo-page">Cose da Fare</div>
         <div class="nav-link" data-target="shopping-page">Lista della Spesa</div>
         <div class="nav-link" data-target="comparison-page">Comparazione Prezzi</div>
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
       </div>
     </nav>
   </header>
 
-  <!-- ==========================
-       SEZIONE TO-DO LIST (PAGINA PREDEFINITA)
-  =========================== -->
-  <section id="todo-page" class="page active">
-    <h2>Cose da Fare</h2>
-    <!-- Form per creare nuove liste to-do -->
-    <form id="new-list-form" class="new-list-form">
-      <input
-        type="text"
-        id="new-list-input"
-        placeholder="Nome della nuova lista..."
-        required
-      />
-      <button type="submit">Crea Lista</button>
-    </form>
-    <!-- Contenitore delle liste -->
-    <div id="lists-container"></div>
-  </section>
-
-  <!-- ==========================
-       SEZIONE LISTA DELLA SPESA
-  =========================== -->
-  <section id="shopping-page" class="page">
-    <h2>Lista della Spesa</h2>
-    <!-- Form per inserire nuovi prodotti con quantità/peso e descrizione -->
-    <form id="new-item-form" class="new-item-form">
-      <input
-        type="text"
-        id="item-name-input"
-        placeholder="Nome prodotto..."
-        required
-      />
-      <input
-        type="text"
-        id="item-qty-input"
-        placeholder="Quantità o peso..."
-        required
-      />
-      <input
-        type="text"
-        name="description"
-        id="item-desc-input"
-        placeholder="Descrizione (opzionale)..."
-      />
-      <button type="submit">Aggiungi</button>
-    </form>
-    <div class="list-section">
-      <h4>Da Comprare</h4>
-      <ul id="shopping-todo-list"></ul>
-    </div>
-    <div class="list-section">
-      <h4>Comprato</h4>
-      <ul id="shopping-done-list"></ul>
-    </div>
-  </section>
-
-  <!-- ==========================
-       SEZIONE COMPARAZIONE PREZZI
-  =========================== -->
-  <section id="comparison-page" class="page">
-    <h2>Comparazione Prezzi</h2>
-    <div class="forms-row">
-      <!-- Aggiungi Prodotto -->
-      <form id="add-product-form">
-        <label for="product-name-input">Nuovo Prodotto:</label>
-        <input
-          type="text"
-          id="product-name-input"
-          placeholder="Nome prodotto..."
-          required
-        />
-        <button type="submit">Aggiungi Prodotto</button>
+  <div class="container">
+    <!-- To-Do Page -->
+    <section id="todo-page" class="page active">
+      <h2>Cose da Fare</h2>
+      <form id="new-list-form" class="new-list-form">
+        <input type="text" id="new-list-input" placeholder="Nome nuova lista..." required>
+        <button type="submit">Crea Lista</button>
       </form>
-      <!-- Aggiungi Supermercato -->
-      <form id="add-store-form">
-        <label for="store-name-input">Nuovo Supermercato:</label>
-        <input
-          type="text"
-          id="store-name-input"
-          placeholder="Nome supermercato..."
-          required
-        />
-        <button type="submit">Aggiungi Supermercato</button>
-      </form>
-    </div>
-    <table id="comparison-table">
-      <thead>
-        <tr>
-          <th>Supermercato</th>
-          <!-- Intestazioni dei prodotti aggiunte dinamicamente -->
-        </tr>
-      </thead>
-      <tbody>
-        <!-- Righe dei supermercati aggiunte dinamicamente -->
-      </tbody>
-    </table>
-  </section>
+      <div id="lists-container"></div>
+    </section>
 
-  <!-- ==========================
-       SCRIPT PER TUTTE LE PAGINE
-  =========================== -->
+    <!-- Shopping Page -->
+    <section id="shopping-page" class="page">
+      <h2>Lista della Spesa</h2>
+      <form id="new-item-form" class="new-item-form">
+        <input type="text" id="item-name-input" placeholder="Nome prodotto..." required>
+        <input type="text" id="item-qty-input" placeholder="Quantità o peso..." required>
+        <input type="text" id="item-desc-input" name="description" placeholder="Descrizione (opzionale)...">
+        <button type="submit">Aggiungi</button>
+      </form>
+      <div class="list-section">
+        <h4>Da Comprare</h4>
+        <ul id="shopping-todo-list"></ul>
+      </div>
+      <div class="list-section">
+        <h4>Comprato</h4>
+        <ul id="shopping-done-list"></ul>
+      </div>
+    </section>
+
+    <!-- Comparison Page -->
+    <section id="comparison-page" class="page">
+      <h2>Comparazione Prezzi</h2>
+      <div class="forms-row">
+        <form id="add-product-form">
+          <label for="product-name-input">Nuovo Prodotto:</label>
+          <input type="text" id="product-name-input" placeholder="Nome prodotto..." required>
+          <button type="submit">Aggiungi Prodotto</button>
+        </form>
+        <form id="add-store-form">
+          <label for="store-name-input">Nuovo Supermercato:</label>
+          <input type="text" id="store-name-input" placeholder="Nome supermercato..." required>
+          <button type="submit">Aggiungi Supermercato</button>
+        </form>
+      </div>
+      <table id="comparison-table">
+        <thead>
+          <tr>
+            <th><span>Supermercato</span></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
   <script>
-    /* ==========================
-       Funzione di Navigazione tra sezioni
-    =========================== */
+    // NAVIGATION TABS
     const navLinks = document.querySelectorAll('.nav-link');
     const pages = document.querySelectorAll('.page');
     navLinks.forEach(link => {
@@ -569,27 +609,41 @@
         navLinks.forEach(l => l.classList.remove('active'));
         pages.forEach(p => p.classList.remove('active'));
         link.classList.add('active');
-        const targetId = link.getAttribute('data-target');
-        document.getElementById(targetId).classList.add('active');
+        document.getElementById(link.dataset.target).classList.add('active');
       });
     });
 
     /* ==========================
-       STORAGE KEYS
+       THEME TOGGLE & PERSISTENCE
     =========================== */
-    const TODO_STORAGE_KEY = 'myplanner_todos';
-    const SHOPPING_STORAGE_KEY = 'myplanner_shopping';
-    const COMP_STORAGE_KEY = 'myplanner_comparison';
+    function setTheme(mode) {
+      if (mode === 'dark') {
+        document.body.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.body.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    }
+    function toggleTheme() {
+      const isDark = document.body.classList.contains('dark');
+      setTheme(isDark ? 'light' : 'dark');
+    }
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') setTheme('dark');
+    })();
 
     /* ==========================
-       Codice per To-Do List Multisessione
+       TODO LIST WITH EDITABLE LIST NAME & DESCRIPTIONS
     =========================== */
+    const TODO_STORAGE_KEY = 'myplanner_todos';
     const newListForm = document.getElementById('new-list-form');
     const newListInput = document.getElementById('new-list-input');
     const listsContainer = document.getElementById('lists-container');
     let listCounter = 0;
     let todosData = []; 
-    // Struttura: [ { id, name, tasks: [ { text, desc, done } ] } ]
+    // Structure: [ { id, name, tasks: [ { text, desc, done } ] } ]
 
     newListForm.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -611,8 +665,44 @@
       card.setAttribute('data-list-id', listObj.id);
 
       const header = document.createElement('h3');
-      header.textContent = listObj.name;
+      const headerSpan = document.createElement('span');
+      headerSpan.textContent = listObj.name;
+      header.appendChild(headerSpan);
       card.appendChild(header);
+
+      // Double-click to edit list name
+      headerSpan.addEventListener('dblclick', () => {
+        const oldName = headerSpan.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = oldName;
+        inputEdit.classList.add('task-label-edit');
+        header.replaceChild(inputEdit, headerSpan);
+        inputEdit.focus();
+
+        function saveHeaderEdit() {
+          const newName = inputEdit.value.trim();
+          if (newName) {
+            const listData = todosData.find(l => l.id === listObj.id);
+            listData.name = newName;
+            saveTodos();
+            headerSpan.textContent = newName;
+            header.replaceChild(headerSpan, inputEdit);
+          } else {
+            header.replaceChild(headerSpan, inputEdit);
+          }
+        }
+
+        inputEdit.addEventListener('blur', saveHeaderEdit);
+        inputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveHeaderEdit();
+          } else if (e.key === 'Escape') {
+            header.replaceChild(headerSpan, inputEdit);
+          }
+        });
+      });
 
       const taskForm = document.createElement('form');
       taskForm.classList.add('task-form');
@@ -702,7 +792,6 @@
         if (!text) return;
         const li = createTaskElement(text, desc, todoUl, doneUl, listId);
         todoUl.appendChild(li);
-        // Aggiorna dati e storage
         const listData = todosData.find(l => l.id === listId);
         listData.tasks.push({ text, desc, done: false });
         saveTodos();
@@ -730,10 +819,12 @@
       topRow.appendChild(label);
       li.appendChild(topRow);
 
-      const descSpan = document.createElement('span');
-      descSpan.textContent = desc;
-      descSpan.classList.add('task-desc');
-      li.appendChild(descSpan);
+      if (desc) {
+        const descSpan = document.createElement('span');
+        descSpan.textContent = desc;
+        descSpan.classList.add('task-desc');
+        li.appendChild(descSpan);
+      }
 
       checkbox.addEventListener('change', () => {
         const listData = todosData.find(l => l.id === listId);
@@ -760,9 +851,11 @@
       label.addEventListener('dblclick', () => {
         enterTaskTextEdit(liElement, oldText, oldDesc, listId, isDone);
       });
-      descSpan.addEventListener('dblclick', () => {
-        enterTaskDescEdit(liElement, oldText, oldDesc, listId, isDone);
-      });
+      if (descSpan) {
+        descSpan.addEventListener('dblclick', () => {
+          enterTaskDescEdit(liElement, oldText, oldDesc, listId, isDone);
+        });
+      }
     }
 
     function enterTaskTextEdit(liElement, oldText, oldDesc, listId, isDone) {
@@ -847,8 +940,9 @@
     }
 
     /* ==========================
-       Codice per Lista della Spesa
+       SHOPPING LIST WITH FULL EDITING
     =========================== */
+    const SHOPPING_STORAGE_KEY = 'myplanner_shopping';
     const shoppingForm = document.getElementById('new-item-form');
     const nameInput = document.getElementById('item-name-input');
     const qtyInput = document.getElementById('item-qty-input');
@@ -856,7 +950,7 @@
     const shoppingTodoList = document.getElementById('shopping-todo-list');
     const shoppingDoneList = document.getElementById('shopping-done-list');
     let shoppingData = [];
-    // Struttura: [ { text, qty, desc, done } ]
+    // Structure: [ { text, qty, desc, done } ]
 
     shoppingForm.addEventListener('submit', (e) => {
       e.preventDefault();
@@ -877,6 +971,7 @@
 
     function createShoppingItem(itemObj) {
       const li = document.createElement('li');
+
       const topRow = document.createElement('div');
       topRow.classList.add('item-content');
 
@@ -889,16 +984,18 @@
 
       const qtySpan = document.createElement('span');
       qtySpan.textContent = itemObj.qty;
-
       infoDiv.appendChild(qtySpan);
+
       topRow.appendChild(checkbox);
       topRow.appendChild(infoDiv);
       li.appendChild(topRow);
 
-      const descSpan = document.createElement('span');
-      descSpan.textContent = itemObj.desc;
-      descSpan.classList.add('item-desc');
-      li.appendChild(descSpan);
+      if (itemObj.desc) {
+        const descSpan = document.createElement('span');
+        descSpan.textContent = itemObj.desc;
+        descSpan.classList.add('item-desc');
+        li.appendChild(descSpan);
+      }
 
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Elimina';
@@ -906,7 +1003,12 @@
 
       deleteBtn.addEventListener('click', () => {
         li.remove();
-        shoppingData = shoppingData.filter(i => !(i.text === itemObj.text && i.qty === itemObj.qty && i.desc === itemObj.desc && i.done === true));
+        shoppingData = shoppingData.filter(i =>
+          !(i.text === itemObj.text &&
+            i.qty === itemObj.qty &&
+            i.desc === itemObj.desc &&
+            i.done === true)
+        );
         saveShopping();
       });
 
@@ -914,7 +1016,7 @@
         checkbox.checked = true;
         li.classList.add('done');
         shoppingDoneList.appendChild(li);
-        deleteBtn.style.display = 'inline-block';
+        deleteBtn.style.display = 'block';
       }
 
       checkbox.addEventListener('change', () => {
@@ -922,7 +1024,7 @@
         if (checkbox.checked) {
           li.classList.add('done');
           shoppingDoneList.appendChild(li);
-          deleteBtn.style.display = 'inline-block';
+          deleteBtn.style.display = 'block';
         } else {
           li.classList.remove('done');
           shoppingTodoList.appendChild(li);
@@ -934,9 +1036,12 @@
       infoDiv.addEventListener('dblclick', () => {
         enterItemTextEdit(li, itemObj);
       });
-      descSpan.addEventListener('dblclick', () => {
-        enterItemDescEdit(li, itemObj);
-      });
+      const descSpan = li.querySelector('.item-desc');
+      if (descSpan) {
+        descSpan.addEventListener('dblclick', () => {
+          enterItemDescEdit(li, itemObj);
+        });
+      }
 
       li.appendChild(deleteBtn);
       return li;
@@ -1050,8 +1155,9 @@
     }
 
     /* ==========================
-       Codice per Comparazione Prezzi
+       PRICE COMPARISON WITH EDITABLE NAMES
     =========================== */
+    const COMP_STORAGE_KEY = 'myplanner_comparison';
     const addProductForm = document.getElementById('add-product-form');
     const productNameInput = document.getElementById('product-name-input');
     const addStoreForm = document.getElementById('add-store-form');
@@ -1061,7 +1167,6 @@
     const tbodyComp = comparisonTable.querySelector('tbody');
 
     let compData = { products: [], stores: [] };
-    // Struttura:
     // products: [ productName, ... ]
     // stores:   [ { name, prices: [ stringValue | "" , ... ] }, ... ]
 
@@ -1073,7 +1178,46 @@
       compData.stores.forEach(storeObj => storeObj.prices.push(""));
 
       const th = document.createElement('th');
-      th.textContent = productName;
+      const headerSpan = document.createElement('span');
+      headerSpan.textContent = productName;
+      headerSpan.style.flex = '1';
+      headerSpan.style.cursor = 'pointer';
+
+      // Double-click to edit product name
+      headerSpan.addEventListener('dblclick', () => {
+        const oldName = headerSpan.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = oldName;
+        inputEdit.classList.add('edit-input');
+        th.replaceChild(inputEdit, headerSpan);
+        inputEdit.focus();
+
+        function saveEdit() {
+          const newName = inputEdit.value.trim();
+          if (newName) {
+            const idx = compData.products.indexOf(oldName);
+            if (idx !== -1) {
+              compData.products[idx] = newName;
+            }
+            saveComparison();
+            headerSpan.textContent = newName;
+            th.replaceChild(headerSpan, inputEdit);
+          } else {
+            th.replaceChild(headerSpan, inputEdit);
+          }
+        }
+        inputEdit.addEventListener('blur', saveEdit);
+        inputEdit.addEventListener('keydown', ev => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            saveEdit();
+          } else if (ev.key === 'Escape') {
+            th.replaceChild(headerSpan, inputEdit);
+          }
+        });
+      });
+
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = '✕';
       deleteBtn.classList.add('delete-button');
@@ -1082,6 +1226,8 @@
       deleteBtn.addEventListener('click', () => {
         removeProductColumn(productName);
       });
+
+      th.appendChild(headerSpan);
       th.appendChild(deleteBtn);
       theadRow.appendChild(th);
 
@@ -1116,10 +1262,45 @@
 
       const tr = document.createElement('tr');
       const tdName = document.createElement('td');
-      tdName.textContent = storeName;
-      tdName.style.display = 'flex';
-      tdName.style.alignItems = 'center';
-      tdName.style.justifyContent = 'space-between';
+      const nameSpan = document.createElement('span');
+      nameSpan.textContent = storeName;
+      nameSpan.style.flex = '1';
+      nameSpan.style.cursor = 'pointer';
+
+      // Double-click to edit store name
+      nameSpan.addEventListener('dblclick', () => {
+        const oldName = nameSpan.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = oldName;
+        inputEdit.classList.add('edit-input');
+        tdName.replaceChild(inputEdit, nameSpan);
+        inputEdit.focus();
+
+        function saveEdit() {
+          const newName = inputEdit.value.trim();
+          if (newName) {
+            const storeIdx = compData.stores.findIndex(s => s.name === oldName);
+            if (storeIdx !== -1) {
+              compData.stores[storeIdx].name = newName;
+            }
+            saveComparison();
+            nameSpan.textContent = newName;
+            tdName.replaceChild(nameSpan, inputEdit);
+          } else {
+            tdName.replaceChild(nameSpan, inputEdit);
+          }
+        }
+        inputEdit.addEventListener('blur', saveEdit);
+        inputEdit.addEventListener('keydown', ev => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            saveEdit();
+          } else if (ev.key === 'Escape') {
+            tdName.replaceChild(nameSpan, inputEdit);
+          }
+        });
+      });
 
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = '✕';
@@ -1132,6 +1313,10 @@
         updateHighlights();
       });
 
+      tdName.style.display = 'flex';
+      tdName.style.alignItems = 'center';
+      tdName.style.justifyContent = 'space-between';
+      tdName.appendChild(nameSpan);
       tdName.appendChild(deleteBtn);
       tr.appendChild(tdName);
 
@@ -1175,7 +1360,6 @@
     }
 
     function updateHighlights() {
-      const rowCount = compData.stores.length;
       const colCount = compData.products.length;
 
       // Rimuovi tutte le evidenziazioni
@@ -1220,7 +1404,45 @@
         compData = JSON.parse(saved);
         compData.products.forEach(productName => {
           const th = document.createElement('th');
-          th.textContent = productName;
+          const headerSpan = document.createElement('span');
+          headerSpan.textContent = productName;
+          headerSpan.style.flex = '1';
+          headerSpan.style.cursor = 'pointer';
+
+          headerSpan.addEventListener('dblclick', () => {
+            const oldName = headerSpan.textContent;
+            const inputEdit = document.createElement('input');
+            inputEdit.type = 'text';
+            inputEdit.value = oldName;
+            inputEdit.classList.add('edit-input');
+            th.replaceChild(inputEdit, headerSpan);
+            inputEdit.focus();
+
+            function saveEdit() {
+              const newName = inputEdit.value.trim();
+              if (newName) {
+                const idx = compData.products.indexOf(oldName);
+                if (idx !== -1) {
+                  compData.products[idx] = newName;
+                }
+                saveComparison();
+                headerSpan.textContent = newName;
+                th.replaceChild(headerSpan, inputEdit);
+              } else {
+                th.replaceChild(headerSpan, inputEdit);
+              }
+            }
+            inputEdit.addEventListener('blur', saveEdit);
+            inputEdit.addEventListener('keydown', ev => {
+              if (ev.key === 'Enter') {
+                ev.preventDefault();
+                saveEdit();
+              } else if (ev.key === 'Escape') {
+                th.replaceChild(headerSpan, inputEdit);
+              }
+            });
+          });
+
           const deleteBtn = document.createElement('button');
           deleteBtn.textContent = '✕';
           deleteBtn.classList.add('delete-button');
@@ -1229,16 +1451,52 @@
           deleteBtn.addEventListener('click', () => {
             removeProductColumn(productName);
           });
+
+          th.appendChild(headerSpan);
           th.appendChild(deleteBtn);
           theadRow.appendChild(th);
         });
         compData.stores.forEach(storeObj => {
           const tr = document.createElement('tr');
           const tdName = document.createElement('td');
-          tdName.textContent = storeObj.name;
-          tdName.style.display = 'flex';
-          tdName.style.alignItems = 'center';
-          tdName.style.justifyContent = 'space-between';
+          const nameSpan = document.createElement('span');
+          nameSpan.textContent = storeObj.name;
+          nameSpan.style.flex = '1';
+          nameSpan.style.cursor = 'pointer';
+
+          nameSpan.addEventListener('dblclick', () => {
+            const oldName = nameSpan.textContent;
+            const inputEdit = document.createElement('input');
+            inputEdit.type = 'text';
+            inputEdit.value = oldName;
+            inputEdit.classList.add('edit-input');
+            tdName.replaceChild(inputEdit, nameSpan);
+            inputEdit.focus();
+
+            function saveEdit() {
+              const newName = inputEdit.value.trim();
+              if (newName) {
+                const storeIdx = compData.stores.findIndex(s => s.name === oldName);
+                if (storeIdx !== -1) {
+                  compData.stores[storeIdx].name = newName;
+                }
+                saveComparison();
+                nameSpan.textContent = newName;
+                tdName.replaceChild(nameSpan, inputEdit);
+              } else {
+                tdName.replaceChild(nameSpan, inputEdit);
+              }
+            }
+            inputEdit.addEventListener('blur', saveEdit);
+            inputEdit.addEventListener('keydown', ev => {
+              if (ev.key === 'Enter') {
+                ev.preventDefault();
+                saveEdit();
+              } else if (ev.key === 'Escape') {
+                tdName.replaceChild(nameSpan, inputEdit);
+              }
+            });
+          });
 
           const deleteBtn = document.createElement('button');
           deleteBtn.textContent = '✕';
@@ -1251,6 +1509,10 @@
             updateHighlights();
           });
 
+          tdName.style.display = 'flex';
+          tdName.style.alignItems = 'center';
+          tdName.style.justifyContent = 'space-between';
+          tdName.appendChild(nameSpan);
           tdName.appendChild(deleteBtn);
           tr.appendChild(tdName);
 
@@ -1276,7 +1538,7 @@
     }
 
     /* ==========================
-       Inizializzazione all'avvio
+       LOAD ALL DATA ON STARTUP
     =========================== */
     document.addEventListener('DOMContentLoaded', () => {
       loadTodos();
