@@ -19,10 +19,6 @@
       color: #333;
       line-height: 1.5;
     }
-    a {
-      text-decoration: none;
-      color: inherit;
-    }
     ul {
       list-style: none;
     }
@@ -741,17 +737,19 @@
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Elimina';
       deleteBtn.classList.add('delete-item-button');
+
+      // Se cliccato, rimuove l'elemento e aggiorna lo storage
       deleteBtn.addEventListener('click', () => {
-        shoppingTodoList.removeChild(li);
-        shoppingDoneList.removeChild(li);
-        shoppingData = shoppingData.filter(i => !(i.text === itemObj.text && i.qty === itemObj.qty));
+        li.remove();
+        shoppingData = shoppingData.filter(i => !(i.text === itemObj.text && i.qty === itemObj.qty && i.done === true));
         saveShopping();
       });
 
-      // Impostazione iniziale: se itemObj.done, spostalo e mostra il pulsante
+      // Impostazione iniziale: se itemObj.done, spostalo in elenco "Comprato" e mostra il pulsante
       if (itemObj.done) {
         checkbox.checked = true;
         li.classList.add('done');
+        shoppingDoneList.appendChild(li);
         deleteBtn.style.display = 'inline-block';
       }
 
@@ -870,7 +868,7 @@
       deleteBtn.classList.add('delete-button');
       deleteBtn.title = 'Rimuovi supermercato';
       deleteBtn.addEventListener('click', () => {
-        tbodyComp.removeChild(tr);
+        tr.remove();
         compData.stores = compData.stores.filter(s => s.name !== storeName);
         saveComparison();
         updateHighlights();
@@ -991,7 +989,7 @@
           deleteBtn.classList.add('delete-button');
           deleteBtn.title = 'Rimuovi supermercato';
           deleteBtn.addEventListener('click', () => {
-            tbodyComp.removeChild(tr);
+            tr.remove();
             compData.stores = compData.stores.filter(s => s.name !== storeObj.name);
             saveComparison();
             updateHighlights();
