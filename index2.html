@@ -287,6 +287,21 @@
       text-decoration: line-through;
       color: #888;
     }
+    #shopping-page .delete-item-button {
+      margin-left: 10px;
+      padding: 4px 8px;
+      font-size: 12px;
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      display: none; /* nascosto finché non è completato */
+    }
+    #shopping-page .delete-item-button:hover {
+      background-color: #c82333;
+    }
 
     /* ==========================
        Stili per Comparazione Prezzi
@@ -501,19 +516,22 @@
     =========================== */
     const navLinks = document.querySelectorAll('.nav-link');
     const pages = document.querySelectorAll('.page');
-
     navLinks.forEach(link => {
       link.addEventListener('click', () => {
-        // Rimuovi .active da tutte le nav-link e pagine
         navLinks.forEach(l => l.classList.remove('active'));
         pages.forEach(p => p.classList.remove('active'));
-
-        // Aggiungi .active al link cliccato e mostra la sezione corrispondente
         link.classList.add('active');
         const targetId = link.getAttribute('data-target');
         document.getElementById(targetId).classList.add('active');
       });
     });
+
+    /* ==========================
+       STORAGE KEYS
+    =========================== */
+    const TODO_STORAGE_KEY = 'myplanner_todos';
+    const SHOPPING_STORAGE_KEY = 'myplanner_shopping';
+    const COMP_STORAGE_KEY = 'myplanner_comparison';
 
     /* ==========================
        Codice per To-Do List Multisessione
@@ -522,30 +540,35 @@
     const newListInput = document.getElementById('new-list-input');
     const listsContainer = document.getElementById('lists-container');
     let listCounter = 0;
+    let todosData = []; 
+    // Structure: [ { id, name, tasks: [ { text, done } ] } ]
 
     newListForm.addEventListener('submit', function(e) {
       e.preventDefault();
       const listName = newListInput.value.trim();
       if (!listName) return;
       listCounter++;
-      const thisListId = 'todo-list-' + listCounter;
-      createTodoList(thisListId, listName);
+      const thisListId = 'todo-list-' + Date.now() + '-' + listCounter;
+      const newListObj = { id: thisListId, name: listName, tasks: [] };
+      todosData.push(newListObj);
+      saveTodos();
+      createTodoList(newListObj);
       newListInput.value = '';
       newListInput.focus();
     });
 
-    function createTodoList(idUnivoco, titoloLista) {
+    function createTodoList(listObj) {
       const card = document.createElement('div');
       card.classList.add('todo-list-card');
-      card.setAttribute('data-list-id', idUnivoco);
+      card.setAttribute('data-list-id', listObj.id);
 
       const header = document.createElement('h3');
-      header.textContent = titoloLista;
+      header.textContent = listObj.name;
       card.appendChild(header);
 
       const taskForm = document.createElement('form');
       taskForm.classList.add('task-form');
-      taskForm.setAttribute('data-list-id', idUnivoco);
+      taskForm.setAttribute('data-list-id', listObj.id);
 
       const taskInput = document.createElement('input');
       taskInput.type = 'text';
@@ -585,40 +608,52 @@
       deleteListBtn.classList.add('delete-list-button');
       deleteListBtn.textContent = 'Elimina Lista';
       deleteListBtn.addEventListener('click', () => {
-        if (confirm(`Sei sicuro di voler eliminare la lista “${titoloLista}”?`)) {
+        if (confirm(`Sei sicuro di voler eliminare la lista “${listObj.name}”?`)) {
           listsContainer.removeChild(card);
+          todosData = todosData.filter(l => l.id !== listObj.id);
+          saveTodos();
         }
       });
       card.appendChild(deleteListBtn);
 
       listsContainer.appendChild(card);
-      configureTodoListeners(card);
+      configureTodoListeners(card, listObj);
+      // Ripopolare eventuali task salvate
+      listObj.tasks.forEach(task => {
+        const li = createTaskElement(task.text, todoUl, doneUl, listObj.id);
+        if (task.done) {
+          li.querySelector('input[type="checkbox"]').checked = true;
+          li.classList.add('done');
+          doneUl.appendChild(li);
+        } else {
+          todoUl.appendChild(li);
+        }
+      });
     }
 
-    function configureTodoListeners(cardElement) {
+    function configureTodoListeners(cardElement, listObj) {
       const listId = cardElement.getAttribute('data-list-id');
       const form = cardElement.querySelector(`form[data-list-id="${listId}"]`);
       const todoUl = cardElement.querySelector('ul[data-type="todo"]');
       const doneUl = cardElement.querySelector('ul[data-type="done"]');
-      const deleteBtn = cardElement.querySelector('.delete-list-button');
 
       form.addEventListener('submit', function(e) {
         e.preventDefault();
         const input = form.querySelector('input[type="text"]');
         const text = input.value.trim();
         if (!text) return;
-        const li = createTaskElement(text, todoUl, doneUl);
+        const li = createTaskElement(text, todoUl, doneUl, listId);
         todoUl.appendChild(li);
+        // Aggiorna data e storage
+        const listData = todosData.find(l => l.id === listId);
+        listData.tasks.push({ text, done: false });
+        saveTodos();
         input.value = '';
         input.focus();
       });
-
-      deleteBtn.addEventListener('click', () => {
-        // già gestito nel createTodoList
-      });
     }
 
-    function createTaskElement(text, todoContainer, doneContainer) {
+    function createTaskElement(text, todoContainer, doneContainer, listId) {
       const li = document.createElement('li');
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
@@ -627,18 +662,41 @@
       label.classList.add('task-label');
 
       checkbox.addEventListener('change', () => {
+        const listData = todosData.find(l => l.id === listId);
+        const taskObj = listData.tasks.find(t => t.text === text && t.done === !checkbox.checked);
         if (checkbox.checked) {
           li.classList.add('done');
           doneContainer.appendChild(li);
+          if (taskObj) taskObj.done = true;
         } else {
           li.classList.remove('done');
           todoContainer.appendChild(li);
+          if (taskObj) taskObj.done = false;
         }
+        saveTodos();
       });
 
       li.appendChild(checkbox);
       li.appendChild(label);
       return li;
+    }
+
+    function saveTodos() {
+      localStorage.setItem(TODO_STORAGE_KEY, JSON.stringify(todosData));
+    }
+
+    function loadTodos() {
+      const saved = localStorage.getItem(TODO_STORAGE_KEY);
+      if (saved) {
+        todosData = JSON.parse(saved);
+        todosData.forEach(listObj => {
+          // Aggiorna counter per evitare ID duplicati
+          const parts = listObj.id.split('-');
+          const ts = parseInt(parts[2]);
+          if (!isNaN(ts)) listCounter = Math.max(listCounter, ts);
+          createTodoList(listObj);
+        });
+      }
     }
 
     /* ==========================
@@ -649,45 +707,92 @@
     const qtyInput = document.getElementById('item-qty-input');
     const shoppingTodoList = document.getElementById('shopping-todo-list');
     const shoppingDoneList = document.getElementById('shopping-done-list');
-
-    function createShoppingItem(nome, quantita) {
-      const li = document.createElement('li');
-      const checkbox = document.createElement('input');
-      checkbox.type = 'checkbox';
-
-      const infoDiv = document.createElement('div');
-      infoDiv.classList.add('item-info');
-      infoDiv.textContent = nome;
-      const qtySpan = document.createElement('span');
-      qtySpan.textContent = quantita;
-      infoDiv.appendChild(qtySpan);
-
-      checkbox.addEventListener('change', () => {
-        if (checkbox.checked) {
-          li.classList.add('done');
-          shoppingDoneList.appendChild(li);
-        } else {
-          li.classList.remove('done');
-          shoppingTodoList.appendChild(li);
-        }
-      });
-
-      li.appendChild(checkbox);
-      li.appendChild(infoDiv);
-      return li;
-    }
+    let shoppingData = [];
+    // Structure: [ { text, qty, done } ]
 
     shoppingForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const nomeProdotto = nameInput.value.trim();
       const quantitaProdotto = qtyInput.value.trim();
       if (!nomeProdotto || !quantitaProdotto) return;
-      const itemElement = createShoppingItem(nomeProdotto, quantitaProdotto);
+      const itemObj = { text: nomeProdotto, qty: quantitaProdotto, done: false };
+      shoppingData.push(itemObj);
+      saveShopping();
+      const itemElement = createShoppingItem(itemObj);
       shoppingTodoList.appendChild(itemElement);
       nameInput.value = '';
       qtyInput.value = '';
       nameInput.focus();
     });
+
+    function createShoppingItem(itemObj) {
+      const li = document.createElement('li');
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+
+      const infoDiv = document.createElement('div');
+      infoDiv.classList.add('item-info');
+      infoDiv.textContent = itemObj.text;
+      const qtySpan = document.createElement('span');
+      qtySpan.textContent = itemObj.qty;
+      infoDiv.appendChild(qtySpan);
+
+      // Pulsante di eliminazione (nascosto inizialmente)
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Elimina';
+      deleteBtn.classList.add('delete-item-button');
+      deleteBtn.addEventListener('click', () => {
+        shoppingTodoList.removeChild(li);
+        shoppingDoneList.removeChild(li);
+        shoppingData = shoppingData.filter(i => !(i.text === itemObj.text && i.qty === itemObj.qty));
+        saveShopping();
+      });
+
+      // Impostazione iniziale: se itemObj.done, spostalo e mostra il pulsante
+      if (itemObj.done) {
+        checkbox.checked = true;
+        li.classList.add('done');
+        deleteBtn.style.display = 'inline-block';
+      }
+
+      checkbox.addEventListener('change', () => {
+        itemObj.done = checkbox.checked;
+        if (checkbox.checked) {
+          li.classList.add('done');
+          shoppingDoneList.appendChild(li);
+          deleteBtn.style.display = 'inline-block';
+        } else {
+          li.classList.remove('done');
+          shoppingTodoList.appendChild(li);
+          deleteBtn.style.display = 'none';
+        }
+        saveShopping();
+      });
+
+      li.appendChild(checkbox);
+      li.appendChild(infoDiv);
+      li.appendChild(deleteBtn);
+      return li;
+    }
+
+    function saveShopping() {
+      localStorage.setItem(SHOPPING_STORAGE_KEY, JSON.stringify(shoppingData));
+    }
+
+    function loadShopping() {
+      const saved = localStorage.getItem(SHOPPING_STORAGE_KEY);
+      if (saved) {
+        shoppingData = JSON.parse(saved);
+        shoppingData.forEach(itemObj => {
+          const li = createShoppingItem(itemObj);
+          if (itemObj.done) {
+            shoppingDoneList.appendChild(li);
+          } else {
+            shoppingTodoList.appendChild(li);
+          }
+        });
+      }
+    }
 
     /* ==========================
        Codice per Comparazione Prezzi
@@ -698,18 +803,21 @@
     const storeNameInput = document.getElementById('store-name-input');
     const comparisonTable = document.getElementById('comparison-table');
     const theadRow = comparisonTable.querySelector('thead tr');
-    const tbody = comparisonTable.querySelector('tbody');
-    let products = [];
+    const tbodyComp = comparisonTable.querySelector('tbody');
+
+    let compData = { products: [], stores: [] };
+    // products: [ productName, ... ]
+    // stores: [ { name, prices: [ stringValue|"" , ... ] }, ... ]
 
     addProductForm.addEventListener('submit', function(e) {
       e.preventDefault();
       const productName = productNameInput.value.trim();
       if (!productName) return;
+      compData.products.push(productName);
+      compData.stores.forEach(storeObj => storeObj.prices.push(""));
 
-      products.push(productName);
       const th = document.createElement('th');
       th.textContent = productName;
-
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = '✕';
       deleteBtn.classList.add('delete-button');
@@ -718,20 +826,25 @@
       deleteBtn.addEventListener('click', () => {
         removeProductColumn(productName);
       });
-
       th.appendChild(deleteBtn);
       theadRow.appendChild(th);
 
-      Array.from(tbody.rows).forEach(row => {
+      Array.from(tbodyComp.rows).forEach((row, rowIndex) => {
         const td = document.createElement('td');
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = '€';
-        input.addEventListener('input', updateHighlights);
+        input.value = compData.stores[rowIndex].prices[compData.products.length - 1];
+        input.addEventListener('input', () => {
+          compData.stores[rowIndex].prices[compData.products.length - 1] = input.value;
+          saveComparison();
+          updateHighlights();
+        });
         td.appendChild(input);
         row.appendChild(td);
       });
 
+      saveComparison();
       productNameInput.value = '';
       productNameInput.focus();
       updateHighlights();
@@ -741,6 +854,9 @@
       e.preventDefault();
       const storeName = storeNameInput.value.trim();
       if (!storeName) return;
+
+      const newStoreObj = { name: storeName, prices: Array(compData.products.length).fill("") };
+      compData.stores.push(newStoreObj);
 
       const tr = document.createElement('tr');
       const tdName = document.createElement('td');
@@ -754,77 +870,165 @@
       deleteBtn.classList.add('delete-button');
       deleteBtn.title = 'Rimuovi supermercato';
       deleteBtn.addEventListener('click', () => {
-        tbody.removeChild(tr);
+        tbodyComp.removeChild(tr);
+        compData.stores = compData.stores.filter(s => s.name !== storeName);
+        saveComparison();
         updateHighlights();
       });
 
       tdName.appendChild(deleteBtn);
       tr.appendChild(tdName);
 
-      products.forEach(_ => {
+      newStoreObj.prices.forEach((priceVal, idx) => {
         const td = document.createElement('td');
         const input = document.createElement('input');
         input.type = 'text';
         input.placeholder = '€';
-        input.addEventListener('input', updateHighlights);
+        input.value = priceVal;
+        input.addEventListener('input', () => {
+          newStoreObj.prices[idx] = input.value;
+          saveComparison();
+          updateHighlights();
+        });
         td.appendChild(input);
         tr.appendChild(td);
       });
 
-      tbody.appendChild(tr);
+      tbodyComp.appendChild(tr);
+      saveComparison();
       storeNameInput.value = '';
       storeNameInput.focus();
     });
 
     function removeProductColumn(productName) {
-      const index = products.indexOf(productName);
+      const index = compData.products.indexOf(productName);
       if (index === -1) return;
-      products.splice(index, 1);
+      compData.products.splice(index, 1);
+      compData.stores.forEach(storeObj => storeObj.prices.splice(index, 1));
 
       const ths = Array.from(theadRow.querySelectorAll('th'));
       const thToRemove = ths[index + 1];
       theadRow.removeChild(thToRemove);
 
-      Array.from(tbody.rows).forEach(row => {
+      Array.from(tbodyComp.rows).forEach(row => {
         row.removeChild(row.children[index + 1]);
       });
 
+      saveComparison();
       updateHighlights();
     }
 
     function updateHighlights() {
-      const colCount = products.length;
-      Array.from(tbody.rows).forEach(row => {
-        // Rimuovo sempre la classe da tutte le celle
+      const rowCount = compData.stores.length;
+      const colCount = compData.products.length;
+
+      // Pulisci tutte le evidenziazioni
+      Array.from(tbodyComp.rows).forEach(row => {
         for (let c = 1; c <= colCount; c++) {
           row.children[c].classList.remove('lowest-price');
         }
       });
 
+      // Per ogni colonna di prodotto
       for (let colIndex = 0; colIndex < colCount; colIndex++) {
         let minPrice = Infinity;
-        let candidateInputs = [];
+        let candidateCells = [];
 
-        Array.from(tbody.rows).forEach(row => {
+        Array.from(tbodyComp.rows).forEach((row, rowIndex) => {
           const cell = row.children[colIndex + 1];
           const input = cell.querySelector('input');
           const val = parseFloat(input.value.replace(',', '.'));
           if (!isNaN(val)) {
             if (val < minPrice) {
               minPrice = val;
-              candidateInputs = [input];
+              candidateCells = [cell];
             } else if (val === minPrice) {
-              candidateInputs.push(input);
+              candidateCells.push(cell);
             }
           }
         });
 
-        candidateInputs.forEach(inp => {
-          const parentCell = inp.closest('td');
-          parentCell.classList.add('lowest-price');
+        candidateCells.forEach(cell => {
+          cell.classList.add('lowest-price');
         });
       }
     }
+
+    function saveComparison() {
+      localStorage.setItem(COMP_STORAGE_KEY, JSON.stringify(compData));
+    }
+
+    function loadComparison() {
+      const saved = localStorage.getItem(COMP_STORAGE_KEY);
+      if (saved) {
+        compData = JSON.parse(saved);
+        // Ricrea intestazioni prodotti
+        compData.products.forEach(productName => {
+          const th = document.createElement('th');
+          th.textContent = productName;
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = '✕';
+          deleteBtn.classList.add('delete-button');
+          deleteBtn.title = 'Rimuovi prodotto';
+          deleteBtn.style.marginLeft = '6px';
+          deleteBtn.addEventListener('click', () => {
+            removeProductColumn(productName);
+          });
+          th.appendChild(deleteBtn);
+          theadRow.appendChild(th);
+        });
+        // Ricrea righe supermercati
+        compData.stores.forEach(storeObj => {
+          const tr = document.createElement('tr');
+          const tdName = document.createElement('td');
+          tdName.textContent = storeObj.name;
+          tdName.style.display = 'flex';
+          tdName.style.alignItems = 'center';
+          tdName.style.justifyContent = 'space-between';
+
+          const deleteBtn = document.createElement('button');
+          deleteBtn.textContent = '✕';
+          deleteBtn.classList.add('delete-button');
+          deleteBtn.title = 'Rimuovi supermercato';
+          deleteBtn.addEventListener('click', () => {
+            tbodyComp.removeChild(tr);
+            compData.stores = compData.stores.filter(s => s.name !== storeObj.name);
+            saveComparison();
+            updateHighlights();
+          });
+
+          tdName.appendChild(deleteBtn);
+          tr.appendChild(tdName);
+
+          storeObj.prices.forEach((priceVal, idx) => {
+            const td = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = '€';
+            input.value = priceVal;
+            input.addEventListener('input', () => {
+              storeObj.prices[idx] = input.value;
+              saveComparison();
+              updateHighlights();
+            });
+            td.appendChild(input);
+            tr.appendChild(td);
+          });
+
+          tbodyComp.appendChild(tr);
+        });
+        updateHighlights();
+      }
+    }
+
+    /* ==========================
+       Inizializzazione all'avvio
+    =========================== */
+    document.addEventListener('DOMContentLoaded', () => {
+      loadTodos();
+      loadShopping();
+      loadComparison();
+    });
   </script>
 </body>
 </html>
