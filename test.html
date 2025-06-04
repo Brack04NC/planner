@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Home – To-Do, Lista della Spesa & Comparazione Prezzi</title>
+  <title>MyPlanner – To-Do, Lista della Spesa & Comparazione Prezzi</title>
   <style>
     /* ==========================
        Stili Globali
@@ -93,9 +93,11 @@
       gap: 10px;
       margin-bottom: 20px;
       justify-content: center;
+      flex-wrap: wrap;
     }
-    #todo-page .new-list-form input[type="text"] {
-      flex: 1;
+    #todo-page .new-list-form input[type="text"],
+    #todo-page .new-list-form input[type="description"] {
+      flex: 1 1 200px;
       padding: 8px;
       font-size: 16px;
       border: 1px solid #ccc;
@@ -134,19 +136,21 @@
       text-align: center;
       color: #333;
     }
-    #todo-page .todo-list-card .task-form {
+    #todo-page .task-form {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
       margin-bottom: 10px;
     }
-    #todo-page .todo-list-card .task-form input[type="text"] {
-      flex: 1;
+    #todo-page .task-form input[type="text"],
+    #todo-page .task-form input[name="description"] {
+      flex: 1 1 120px;
       padding: 6px;
       font-size: 14px;
       border: 1px solid #ccc;
       border-radius: 4px;
     }
-    #todo-page .todo-list-card .task-form button {
+    #todo-page .task-form button {
       padding: 6px 12px;
       font-size: 14px;
       background-color: #28a745;
@@ -156,7 +160,7 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    #todo-page .todo-list-card .task-form button:hover {
+    #todo-page .task-form button:hover {
       background-color: #218838;
     }
     #todo-page .list-section {
@@ -181,12 +185,16 @@
     }
     #todo-page .task-items li {
       display: flex;
-      align-items: center;
+      flex-direction: column;
       padding: 6px 0;
       border-bottom: 1px solid #e2e8f0;
     }
     #todo-page .task-items li:last-child {
       border-bottom: none;
+    }
+    #todo-page .task-content {
+      display: flex;
+      align-items: center;
     }
     #todo-page .task-label,
     #todo-page .task-label-edit {
@@ -195,11 +203,21 @@
       font-size: 14px;
       cursor: pointer;
     }
-    #todo-page .task-label-edit {
+    #todo-page .task-desc,
+    #todo-page .task-desc-edit {
+      margin-left: 32px;
+      font-size: 12px;
+      color: #666;
+      cursor: pointer;
+    }
+    #todo-page .task-label-edit,
+    #todo-page .task-desc-edit {
       border: 1px solid #ccc;
       padding: 2px 4px;
       border-radius: 4px;
       font-size: 14px;
+      width: calc(100% - 12px);
+      margin: 2px 0;
     }
     #todo-page .done .task-label {
       text-decoration: line-through;
@@ -231,8 +249,9 @@
       margin-bottom: 20px;
       justify-content: center;
     }
-    #shopping-page .new-item-form input[type="text"] {
-      flex: 1 1 200px;
+    #shopping-page .new-item-form input[type="text"],
+    #shopping-page .new-item-form input[name="description"] {
+      flex: 1 1 150px;
       padding: 8px;
       font-size: 16px;
       border: 1px solid #ccc;
@@ -267,31 +286,42 @@
     }
     #shopping-page li {
       display: flex;
-      align-items: center;
-      justify-content: space-between;
+      flex-direction: column;
       padding: 8px 0;
       border-bottom: 1px solid #eee;
     }
     #shopping-page li:last-child {
       border-bottom: none;
     }
+    #shopping-page .item-content {
+      display: flex;
+      align-items: center;
+    }
     #shopping-page .item-info,
     #shopping-page .item-info-edit {
       display: flex;
-      align-items: center;
+      align-items: baseline;
       flex: 1;
       margin-left: 8px;
       font-size: 16px;
       cursor: pointer;
+      gap: 8px;
     }
-    #shopping-page .item-info-edit input[type="text"] {
+    #shopping-page .item-desc,
+    #shopping-page .item-desc-edit {
+      margin-left: 32px;
+      font-size: 12px;
+      color: #666;
+      cursor: pointer;
+    }
+    #shopping-page .item-info-edit input[type="text"],
+    #shopping-page .item-info-edit input[name="description"] {
       border: 1px solid #ccc;
       padding: 2px 4px;
       border-radius: 4px;
       font-size: 14px;
     }
     #shopping-page .item-info span {
-      margin-left: 8px;
       color: #666;
       font-size: 14px;
     }
@@ -451,7 +481,7 @@
   =========================== -->
   <section id="shopping-page" class="page">
     <h2>Lista della Spesa</h2>
-    <!-- Form per inserire nuovi prodotti con quantità/peso -->
+    <!-- Form per inserire nuovi prodotti con quantità/peso e descrizione -->
     <form id="new-item-form" class="new-item-form">
       <input
         type="text"
@@ -464,6 +494,12 @@
         id="item-qty-input"
         placeholder="Quantità o peso..."
         required
+      />
+      <input
+        type="text"
+        name="description"
+        id="item-desc-input"
+        placeholder="Descrizione (opzionale)..."
       />
       <button type="submit">Aggiungi</button>
     </form>
@@ -553,7 +589,7 @@
     const listsContainer = document.getElementById('lists-container');
     let listCounter = 0;
     let todosData = []; 
-    // Structure: [ { id, name, tasks: [ { text, done } ] } ]
+    // Struttura: [ { id, name, tasks: [ { text, desc, done } ] } ]
 
     newListForm.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -587,10 +623,16 @@
       taskInput.placeholder = 'Nuova attività...';
       taskInput.required = true;
 
+      const descInput = document.createElement('input');
+      descInput.type = 'text';
+      descInput.name = 'description';
+      descInput.placeholder = 'Descrizione (opzionale)...';
+
       const addTaskBtn = document.createElement('button');
       addTaskBtn.textContent = 'Aggiungi';
 
       taskForm.appendChild(taskInput);
+      taskForm.appendChild(descInput);
       taskForm.appendChild(addTaskBtn);
       card.appendChild(taskForm);
 
@@ -633,16 +675,15 @@
 
       // Ripopolare eventuali task salvate
       listObj.tasks.forEach(task => {
-        const li = createTaskElement(task.text, todoUl, doneUl, listObj.id);
+        const li = createTaskElement(task.text, task.desc, todoUl, doneUl, listObj.id);
         if (task.done) {
           li.querySelector('input[type="checkbox"]').checked = true;
           li.classList.add('done');
           doneUl.appendChild(li);
-          showTaskEdit(li, task.text, listObj.id, task.done);
         } else {
           todoUl.appendChild(li);
-          showTaskEdit(li, task.text, listObj.id, task.done);
         }
+        enableTaskEdit(li, task.text, task.desc, listObj.id, task.done);
       });
     }
 
@@ -655,31 +696,48 @@
       form.addEventListener('submit', function(e) {
         e.preventDefault();
         const input = form.querySelector('input[type="text"]');
+        const descInput = form.querySelector('input[name="description"]');
         const text = input.value.trim();
+        const desc = descInput.value.trim();
         if (!text) return;
-        const li = createTaskElement(text, todoUl, doneUl, listId);
+        const li = createTaskElement(text, desc, todoUl, doneUl, listId);
         todoUl.appendChild(li);
-        // Aggiorna data e storage
+        // Aggiorna dati e storage
         const listData = todosData.find(l => l.id === listId);
-        listData.tasks.push({ text, done: false });
+        listData.tasks.push({ text, desc, done: false });
         saveTodos();
-        showTaskEdit(li, text, listId, false);
+        enableTaskEdit(li, text, desc, listId, false);
         input.value = '';
+        descInput.value = '';
         input.focus();
       });
     }
 
-    function createTaskElement(text, todoContainer, doneContainer, listId) {
+    function createTaskElement(text, desc, todoContainer, doneContainer, listId) {
       const li = document.createElement('li');
+
+      const topRow = document.createElement('div');
+      topRow.classList.add('task-content');
+
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
+
       const label = document.createElement('span');
       label.textContent = text;
       label.classList.add('task-label');
 
+      topRow.appendChild(checkbox);
+      topRow.appendChild(label);
+      li.appendChild(topRow);
+
+      const descSpan = document.createElement('span');
+      descSpan.textContent = desc;
+      descSpan.classList.add('task-desc');
+      li.appendChild(descSpan);
+
       checkbox.addEventListener('change', () => {
         const listData = todosData.find(l => l.id === listId);
-        const taskObj = listData.tasks.find(t => t.text === text && t.done === !checkbox.checked);
+        const taskObj = listData.tasks.find(t => t.text === text && t.desc === desc && t.done === !checkbox.checked);
         if (checkbox.checked) {
           li.classList.add('done');
           doneContainer.appendChild(li);
@@ -692,50 +750,82 @@
         saveTodos();
       });
 
-      li.appendChild(checkbox);
-      li.appendChild(label);
       return li;
     }
 
-    function showTaskEdit(liElement, taskText, listId, isDone) {
-      // Abilita modifica al doppio clic sul testo
+    function enableTaskEdit(liElement, oldText, oldDesc, listId, isDone) {
       const label = liElement.querySelector('.task-label');
+      const descSpan = liElement.querySelector('.task-desc');
+
       label.addEventListener('dblclick', () => {
-        const oldText = label.textContent;
-        const inputEdit = document.createElement('input');
-        inputEdit.type = 'text';
-        inputEdit.value = oldText;
-        inputEdit.classList.add('task-label-edit');
-        liElement.replaceChild(inputEdit, label);
-        inputEdit.focus();
+        enterTaskTextEdit(liElement, oldText, oldDesc, listId, isDone);
+      });
+      descSpan.addEventListener('dblclick', () => {
+        enterTaskDescEdit(liElement, oldText, oldDesc, listId, isDone);
+      });
+    }
 
-        function saveEdit() {
-          const newText = inputEdit.value.trim();
-          if (newText) {
-            // Aggiorna dati in memoria e storage
-            const listData = todosData.find(l => l.id === listId);
-            const taskObj = listData.tasks.find(t => t.text === oldText && t.done === isDone);
-            if (taskObj) taskObj.text = newText;
-            saveTodos();
-            // Ripristina span
-            label.textContent = newText;
-            liElement.replaceChild(label, inputEdit);
-          } else {
-            // Se vuoto, ripristina vecchio
-            liElement.replaceChild(label, inputEdit);
-          }
+    function enterTaskTextEdit(liElement, oldText, oldDesc, listId, isDone) {
+      const label = liElement.querySelector('.task-label');
+      const inputEdit = document.createElement('input');
+      inputEdit.type = 'text';
+      inputEdit.value = oldText;
+      inputEdit.classList.add('task-label-edit');
+      liElement.replaceChild(inputEdit, label);
+      inputEdit.focus();
+
+      function saveEdit() {
+        const newText = inputEdit.value.trim();
+        if (newText) {
+          const listData = todosData.find(l => l.id === listId);
+          const taskObj = listData.tasks.find(t => t.text === oldText && t.desc === oldDesc && t.done === isDone);
+          if (taskObj) taskObj.text = newText;
+          saveTodos();
+          label.textContent = newText;
+          liElement.replaceChild(label, inputEdit);
+        } else {
+          liElement.replaceChild(label, inputEdit);
         }
+      }
 
-        inputEdit.addEventListener('blur', saveEdit);
-        inputEdit.addEventListener('keydown', e => {
-          if (e.key === 'Enter') {
-            e.preventDefault();
-            saveEdit();
-          } else if (e.key === 'Escape') {
-            // Annulla modifica
-            liElement.replaceChild(label, inputEdit);
-          }
-        });
+      inputEdit.addEventListener('blur', saveEdit);
+      inputEdit.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveEdit();
+        } else if (e.key === 'Escape') {
+          liElement.replaceChild(label, inputEdit);
+        }
+      });
+    }
+
+    function enterTaskDescEdit(liElement, oldText, oldDesc, listId, isDone) {
+      const descSpan = liElement.querySelector('.task-desc');
+      const inputEdit = document.createElement('input');
+      inputEdit.type = 'text';
+      inputEdit.value = oldDesc;
+      inputEdit.classList.add('task-desc-edit');
+      liElement.replaceChild(inputEdit, descSpan);
+      inputEdit.focus();
+
+      function saveEdit() {
+        const newDesc = inputEdit.value.trim();
+        const listData = todosData.find(l => l.id === listId);
+        const taskObj = listData.tasks.find(t => t.text === oldText && t.desc === oldDesc && t.done === isDone);
+        if (taskObj) taskObj.desc = newDesc;
+        saveTodos();
+        descSpan.textContent = newDesc;
+        liElement.replaceChild(descSpan, inputEdit);
+      }
+
+      inputEdit.addEventListener('blur', saveEdit);
+      inputEdit.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          saveEdit();
+        } else if (e.key === 'Escape') {
+          liElement.replaceChild(descSpan, inputEdit);
+        }
       });
     }
 
@@ -748,7 +838,6 @@
       if (saved) {
         todosData = JSON.parse(saved);
         todosData.forEach(listObj => {
-          // Aggiorna counter per evitare ID duplicati
           const parts = listObj.id.split('-');
           const ts = parseInt(parts[2]);
           if (!isNaN(ts)) listCounter = Math.max(listCounter, ts);
@@ -763,51 +852,64 @@
     const shoppingForm = document.getElementById('new-item-form');
     const nameInput = document.getElementById('item-name-input');
     const qtyInput = document.getElementById('item-qty-input');
+    const descInput = document.getElementById('item-desc-input');
     const shoppingTodoList = document.getElementById('shopping-todo-list');
     const shoppingDoneList = document.getElementById('shopping-done-list');
     let shoppingData = [];
-    // Structure: [ { text, qty, done } ]
+    // Struttura: [ { text, qty, desc, done } ]
 
     shoppingForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const nomeProdotto = nameInput.value.trim();
       const quantitaProdotto = qtyInput.value.trim();
+      const desc = descInput.value.trim();
       if (!nomeProdotto || !quantitaProdotto) return;
-      const itemObj = { text: nomeProdotto, qty: quantitaProdotto, done: false };
+      const itemObj = { text: nomeProdotto, qty: quantitaProdotto, desc, done: false };
       shoppingData.push(itemObj);
       saveShopping();
       const itemElement = createShoppingItem(itemObj);
       shoppingTodoList.appendChild(itemElement);
       nameInput.value = '';
       qtyInput.value = '';
+      descInput.value = '';
       nameInput.focus();
     });
 
     function createShoppingItem(itemObj) {
       const li = document.createElement('li');
+      const topRow = document.createElement('div');
+      topRow.classList.add('item-content');
+
       const checkbox = document.createElement('input');
       checkbox.type = 'checkbox';
 
       const infoDiv = document.createElement('div');
       infoDiv.classList.add('item-info');
       infoDiv.textContent = itemObj.text;
+
       const qtySpan = document.createElement('span');
       qtySpan.textContent = itemObj.qty;
-      infoDiv.appendChild(qtySpan);
 
-      // Pulsante di eliminazione (nascosto inizialmente)
+      infoDiv.appendChild(qtySpan);
+      topRow.appendChild(checkbox);
+      topRow.appendChild(infoDiv);
+      li.appendChild(topRow);
+
+      const descSpan = document.createElement('span');
+      descSpan.textContent = itemObj.desc;
+      descSpan.classList.add('item-desc');
+      li.appendChild(descSpan);
+
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Elimina';
       deleteBtn.classList.add('delete-item-button');
 
-      // Se cliccato, rimuove l'elemento e aggiorna lo storage
       deleteBtn.addEventListener('click', () => {
         li.remove();
-        shoppingData = shoppingData.filter(i => !(i.text === itemObj.text && i.qty === itemObj.qty && i.done === true));
+        shoppingData = shoppingData.filter(i => !(i.text === itemObj.text && i.qty === itemObj.qty && i.desc === itemObj.desc && i.done === true));
         saveShopping();
       });
 
-      // Impostazione iniziale: se itemObj.done, spostalo in elenco "Comprato" e mostra il pulsante
       if (itemObj.done) {
         checkbox.checked = true;
         li.classList.add('done');
@@ -815,7 +917,6 @@
         deleteBtn.style.display = 'inline-block';
       }
 
-      // Cambio stato completato
       checkbox.addEventListener('change', () => {
         itemObj.done = checkbox.checked;
         if (checkbox.checked) {
@@ -830,22 +931,23 @@
         saveShopping();
       });
 
-      // Doppio clic sul nome prodotto per modificare
       infoDiv.addEventListener('dblclick', () => {
-        enterEditMode(li, itemObj);
+        enterItemTextEdit(li, itemObj);
+      });
+      descSpan.addEventListener('dblclick', () => {
+        enterItemDescEdit(li, itemObj);
       });
 
-      li.appendChild(checkbox);
-      li.appendChild(infoDiv);
       li.appendChild(deleteBtn);
       return li;
     }
 
-    function enterEditMode(liElement, itemObj) {
+    function enterItemTextEdit(liElement, itemObj) {
       const infoDiv = liElement.querySelector('.item-info');
       const oldName = itemObj.text;
       const oldQty = itemObj.qty;
-      // Crea contenitore di modifica
+      const oldDesc = itemObj.desc;
+
       const editDiv = document.createElement('div');
       editDiv.classList.add('item-info-edit');
 
@@ -870,14 +972,12 @@
           itemObj.text = newName;
           itemObj.qty = newQty;
           saveShopping();
-          // Ripristina infoDiv
           infoDiv.textContent = newName;
           const spanQty = document.createElement('span');
           spanQty.textContent = newQty;
           infoDiv.appendChild(spanQty);
           liElement.replaceChild(infoDiv, editDiv);
         } else {
-          // Annulla modifica se vuoto
           liElement.replaceChild(infoDiv, editDiv);
         }
       }
@@ -898,6 +998,36 @@
       });
       nameInputEdit.addEventListener('blur', saveEdit);
       qtyInputEdit.addEventListener('blur', saveEdit);
+    }
+
+    function enterItemDescEdit(liElement, itemObj) {
+      const descSpan = liElement.querySelector('.item-desc');
+      const oldDesc = itemObj.desc;
+
+      const inputEdit = document.createElement('input');
+      inputEdit.type = 'text';
+      inputEdit.value = oldDesc;
+      inputEdit.classList.add('item-desc-edit');
+
+      liElement.replaceChild(inputEdit, descSpan);
+      inputEdit.focus();
+
+      function saveEdit() {
+        const newDesc = inputEdit.value.trim();
+        itemObj.desc = newDesc;
+        saveShopping();
+        descSpan.textContent = newDesc;
+        liElement.replaceChild(descSpan, inputEdit);
+      }
+
+      inputEdit.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+          saveEdit();
+        } else if (e.key === 'Escape') {
+          liElement.replaceChild(descSpan, inputEdit);
+        }
+      });
+      inputEdit.addEventListener('blur', saveEdit);
     }
 
     function saveShopping() {
@@ -931,8 +1061,9 @@
     const tbodyComp = comparisonTable.querySelector('tbody');
 
     let compData = { products: [], stores: [] };
+    // Struttura:
     // products: [ productName, ... ]
-    // stores: [ { name, prices: [ stringValue|"" , ... ] }, ... ]
+    // stores:   [ { name, prices: [ stringValue | "" , ... ] }, ... ]
 
     addProductForm.addEventListener('submit', function(e) {
       e.preventDefault();
@@ -1032,7 +1163,7 @@
       compData.stores.forEach(storeObj => storeObj.prices.splice(index, 1));
 
       const ths = Array.from(theadRow.querySelectorAll('th'));
-      const thToRemove = ths[index + 1];
+      const thToRemove = ths[index + 1]; // +1 perché prima colonna è “Supermercato”
       theadRow.removeChild(thToRemove);
 
       Array.from(tbodyComp.rows).forEach(row => {
@@ -1047,14 +1178,14 @@
       const rowCount = compData.stores.length;
       const colCount = compData.products.length;
 
-      // Pulisci tutte le evidenziazioni
+      // Rimuovi tutte le evidenziazioni
       Array.from(tbodyComp.rows).forEach(row => {
         for (let c = 1; c <= colCount; c++) {
           row.children[c].classList.remove('lowest-price');
         }
       });
 
-      // Per ogni colonna di prodotto
+      // Per ogni colonna (prodotto), individua prezzo minimo
       for (let colIndex = 0; colIndex < colCount; colIndex++) {
         let minPrice = Infinity;
         let candidateCells = [];
@@ -1087,7 +1218,6 @@
       const saved = localStorage.getItem(COMP_STORAGE_KEY);
       if (saved) {
         compData = JSON.parse(saved);
-        // Ricrea intestazioni prodotti
         compData.products.forEach(productName => {
           const th = document.createElement('th');
           th.textContent = productName;
@@ -1102,7 +1232,6 @@
           th.appendChild(deleteBtn);
           theadRow.appendChild(th);
         });
-        // Ricrea righe supermercati
         compData.stores.forEach(storeObj => {
           const tr = document.createElement('tr');
           const tdName = document.createElement('td');
