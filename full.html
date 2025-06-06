@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MyPlanner Condiviso</title>
+  <title>MyPlanner Condiviso (Firestore)</title>
   <style>
     :root {
       --bg-light: #f0f2f5;
@@ -483,73 +483,36 @@
     /* ==========================
        Comparazione Prezzi Styles
     =========================== */
-    #comparison-page .forms-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 20px;
-      margin-bottom: 20px;
-      justify-content: center;
-    }
-    #comparison-page .forms-row form {
-      display: flex;
-      gap: 8px;
-      align-items: center;
-    }
-    #comparison-page .forms-row input[type="text"] {
-      padding: 6px;
-      font-size: 14px;
-      border: 1px solid var(--border-light);
-      border-radius: 4px;
-      background-color: inherit;
-      color: inherit;
-      transition: border-color 0.3s;
-    }
-    body.dark #comparison-page .forms-row input {
-      border-color: var(--border-dark);
-    }
-    #comparison-page .forms-row button {
-      padding: 6px 12px;
-      font-size: 14px;
-      background-color: #007bff;
-      color: #fff;
-      border: none;
-      border-radius: 4px;
-      cursor: pointer;
-      transition: background-color 0.2s;
-    }
-    #comparison-page .forms-row button:hover {
-      background-color: #0069d9;
-    }
-    #comparison-page #comparison-table {
+    .comparison-table {
       width: 100%;
       border-collapse: collapse;
       margin-top: 10px;
       transition: background-color 0.3s, color 0.3s;
     }
-    #comparison-page #comparison-table th,
-    #comparison-page #comparison-table td {
+    .comparison-table th,
+    .comparison-table td {
       border: 1px solid var(--border-light);
       padding: 8px;
       text-align: center;
       font-size: 14px;
       transition: border-color 0.3s;
     }
-    body.dark #comparison-page #comparison-table th,
-    body.dark #comparison-page #comparison-table td {
+    body.dark .comparison-table th,
+    body.dark .comparison-table td {
       border-color: var(--border-dark);
     }
-    #comparison-page #comparison-table th {
+    .comparison-table th {
       background-color: var(--card-light);
       cursor: pointer;
       position: relative;
     }
-    body.dark #comparison-page #comparison-table th {
+    body.dark .comparison-table th {
       background-color: var(--card-dark);
     }
-    #comparison-page #comparison-table th span {
+    .comparison-table th span {
       flex: 1;
     }
-    #comparison-page #comparison-table th input.edit-input {
+    .comparison-table th input.edit-input {
       width: 80%;
       padding: 4px;
       font-size: 13px;
@@ -559,10 +522,10 @@
       color: inherit;
       transition: border-color 0.3s;
     }
-    body.dark #comparison-page #comparison-table th input {
+    body.dark .comparison-table th input {
       border-color: var(--border-dark);
     }
-    #comparison-page #comparison-table td input[type="text"] {
+    .comparison-table td input[type="text"] {
       width: 100%;
       box-sizing: border-box;
       padding: 4px;
@@ -574,10 +537,10 @@
       color: inherit;
       transition: border-color 0.3s;
     }
-    body.dark #comparison-page #comparison-table td input {
+    body.dark .comparison-table td input {
       border-color: var(--border-dark);
     }
-    #comparison-page .delete-button {
+    .comparison-table .delete-button {
       background-color: #dc3545;
       color: #fff;
       border: none;
@@ -587,14 +550,47 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    #comparison-page .delete-button:hover {
+    .comparison-table .delete-button:hover {
       background-color: #c82333;
     }
-    #comparison-page .lowest-price {
+    .comparison-table .lowest-price {
       background-color: #d4edda; /* verde chiaro */
     }
 
-    /* Responsive */
+    /* Responsive per mobile */
+    @media screen and (max-width: 768px) {
+      .comparison-table {
+        font-size: 14px;
+        overflow-x: auto;
+        display: block;
+        white-space: nowrap;
+      }
+      .comparison-table th, 
+      .comparison-table td {
+        padding: 8px 10px;
+      }
+      .comparison-table thead {
+        display: none;
+      }
+      .comparison-table tr {
+        display: block;
+        margin-bottom: 10px;
+        border-bottom: 1px solid #ddd;
+      }
+      .comparison-table td {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px;
+        border: none;
+        border-bottom: 1px solid #eee;
+      }
+      .comparison-table td::before {
+        content: attr(data-label);
+        font-weight: bold;
+      }
+    }
+
+    /* Responsive generale */
     @media (max-width: 600px) {
       nav {
         flex-direction: column;
@@ -607,7 +603,7 @@
       #todo-page .todo-list-card,
       #shopping-page li,
       #wishlist-page li,
-      #comparison-page #comparison-table,
+      .comparison-table,
       #comparison-page .forms-row {
         width: 100%;
       }
@@ -683,7 +679,7 @@
           <button type="submit">Aggiungi Supermercato</button>
         </form>
       </div>
-      <table id="comparison-table">
+      <table id="comparison-table" class="comparison-table">
         <thead>
           <tr>
             <th><span>Supermercato</span></th>
@@ -707,11 +703,11 @@
       onSnapshot,
       query,
       orderBy,
-      serverTimestamp
+      serverTimestamp,
+      getDoc
     } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
 
-    // ----------------------------
-    // CONFIGURAZIONE FIREBASE
+    // CONFIGURAZIONE FIREBASE (Firestore)
     const firebaseConfig = {
       apiKey: "AIzaSyAx1f5ZGon--RhyWwlKDHHx2PX7znz4Y4c",
       authDomain: "todosite-50224.firebaseapp.com",
@@ -724,7 +720,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // ----------------------------
     // NAVIGATION TABS
     const navLinks = document.querySelectorAll('.nav-link');
     const pages = document.querySelectorAll('.page');
@@ -737,7 +732,6 @@
       });
     });
 
-    // ----------------------------
     // THEME TOGGLE
     function setTheme(mode) {
       if (mode === 'dark') {
@@ -758,14 +752,12 @@
     })();
 
     // ==========================
-    // TODO LIST MULTI-LIST CONDIVISA
+    // TODO LIST MULTI-LIST (Firestore)
     const TODO_LISTS = collection(db, 'todoLists');
     const newListForm = document.getElementById('new-list-form');
     const newListInput = document.getElementById('new-list-input');
     const listsContainer = document.getElementById('lists-container');
-    let listIds = new Set();
 
-    // Crea nuova lista
     newListForm.addEventListener('submit', async e => {
       e.preventDefault();
       const name = newListInput.value.trim();
@@ -774,13 +766,10 @@
       newListInput.value = '';
     });
 
-    // Ascolta tutte le liste
     onSnapshot(TODO_LISTS, snapshot => {
       listsContainer.innerHTML = '';
-      listIds.clear();
       snapshot.docs.forEach(docSnap => {
         const listObj = { id: docSnap.id, name: docSnap.data().name };
-        listIds.add(listObj.id);
         renderTodoList(listObj);
       });
     });
@@ -876,26 +865,23 @@
       doneSection.appendChild(doneUl);
       card.appendChild(doneSection);
 
-      // Elimina lista
+      // Elimina lista e relativi task
       const deleteListBtn = document.createElement('button');
       deleteListBtn.classList.add('delete-list-button');
       deleteListBtn.textContent = 'Elimina Lista';
       deleteListBtn.addEventListener('click', async () => {
         if (confirm(`Eliminare la lista “${listObj.name}”?`)) {
-          // Elimina tutti i task nella sottocollezione poi la lista
           const tasksCol = collection(db, 'todoLists', listObj.id, 'tasks');
-          onSnapshot(tasksCol, async snap => {
-            const batchDeletes = snap.docs.map(d => deleteDoc(doc(db, 'todoLists', listObj.id, 'tasks', d.id)));
-            await Promise.all(batchDeletes);
-            await deleteDoc(doc(db, 'todoLists', listObj.id));
-          });
+          const snapshot = await getDocs(tasksCol);
+          const deletes = snapshot.docs.map(d => deleteDoc(doc(db, 'todoLists', listObj.id, 'tasks', d.id)));
+          await Promise.all(deletes);
+          await deleteDoc(doc(db, 'todoLists', listObj.id));
         }
       });
       card.appendChild(deleteListBtn);
 
       listsContainer.appendChild(card);
 
-      // Gestione submit form task
       taskForm.addEventListener('submit', async e => {
         e.preventDefault();
         const text = taskInput.value.trim();
@@ -911,7 +897,6 @@
         descInput.value = '';
       });
 
-      // Ascolta i task di questa lista
       const tasksQuery = query(collection(db, 'todoLists', listObj.id, 'tasks'), orderBy('timestamp', 'asc'));
       onSnapshot(tasksQuery, snapshot => {
         todoUl.innerHTML = '';
@@ -965,7 +950,8 @@
         inputEdit.type = 'text';
         inputEdit.value = old;
         inputEdit.classList.add('task-label-edit');
-        li.replaceChild(inputEdit, label);
+
+        topRow.replaceChild(inputEdit, label);
         inputEdit.focus();
 
         async function saveEdit() {
@@ -974,15 +960,16 @@
             await updateDoc(doc(db, 'todoLists', listId, 'tasks', taskId), { text: newText });
           }
           label.textContent = newText || old;
-          li.replaceChild(label, inputEdit);
+          topRow.replaceChild(label, inputEdit);
         }
+
         inputEdit.addEventListener('blur', saveEdit);
         inputEdit.addEventListener('keydown', e => {
           if (e.key === 'Enter') {
             e.preventDefault();
             saveEdit();
           } else if (e.key === 'Escape') {
-            li.replaceChild(label, inputEdit);
+            topRow.replaceChild(label, inputEdit);
           }
         });
       }
@@ -1010,6 +997,7 @@
             descSpan.textContent = newDesc;
             li.replaceChild(descSpan, inputEdit);
           }
+
           inputEdit.addEventListener('blur', saveEdit);
           inputEdit.addEventListener('keydown', e => {
             if (e.key === 'Enter') {
@@ -1043,7 +1031,7 @@
     }
 
     // ==========================
-    // SHOPPING LIST CONDIVISA
+    // SHOPPING LIST CONDIVISA (Firestore)
     const SHOPPING = collection(db, 'shoppingItems');
     const newShoppingForm = document.getElementById('new-shopping-form');
     const shopItemInput = document.getElementById('shop-item-input');
@@ -1146,8 +1134,7 @@
           if (newName && newQty) {
             await updateDoc(doc(db, 'shoppingItems', id), { text: newName, qty: newQty });
           }
-          // Ripristina infoDiv
-          editDiv.replaceWith(infoDiv);
+          li.replaceChild(infoDiv, editDiv);
         }
 
         nameInputEdit.addEventListener('keydown', e => {
@@ -1222,7 +1209,7 @@
     }
 
     // ==========================
-    // WISHLIST CONDIVISA
+    // WISHLIST CONDIVISA (Firestore)
     const WISHLIST = collection(db, 'wishlistItems');
     const newWishlistForm = document.getElementById('new-wishlist-form');
     const wishlistItemInput = document.getElementById('wishlist-item-input');
@@ -1264,7 +1251,7 @@
     });
 
     // ==========================
-    // COMPARATORE PREZZI CONDIVISO
+    // COMPARATORE PREZZI CONDIVISO (Firestore)
     const COMP_DOC = doc(db, 'comparisonData', 'default');
     const addProductForm = document.getElementById('add-product-form');
     const productNameInput = document.getElementById('product-name-input');
@@ -1274,7 +1261,6 @@
     const theadRow = comparisonTable.querySelector('thead tr');
     const tbodyComp = comparisonTable.querySelector('tbody');
 
-    // Inizializza documento se non esiste
     onSnapshot(COMP_DOC, async docSnap => {
       if (!docSnap.exists()) {
         await setDoc(COMP_DOC, { products: [], stores: [] });
@@ -1288,10 +1274,9 @@
       e.preventDefault();
       const productName = productNameInput.value.trim();
       if (!productName) return;
-      const docSnap = await COMP_DOC.get();
-      const data = docSnap.data();
+      const docSnap = await getDoc(COMP_DOC);
+      const data = docSnap.exists() ? docSnap.data() : { products: [], stores: [] };
       const newProducts = [...data.products, productName];
-      // Aggiorna tutti gli store aggiungendo posizione vuota
       const newStores = data.stores.map(s => ({
         name: s.name,
         prices: [...s.prices, ""]
@@ -1304,8 +1289,8 @@
       e.preventDefault();
       const storeName = storeNameInput.value.trim();
       if (!storeName) return;
-      const docSnap = await COMP_DOC.get();
-      const data = docSnap.data();
+      const docSnap = await getDoc(COMP_DOC);
+      const data = docSnap.exists() ? docSnap.data() : { products: [], stores: [] };
       const newStoreObj = { name: storeName, prices: Array(data.products.length).fill("") };
       const newStores = [...data.stores, newStoreObj];
       await updateDoc(COMP_DOC, { stores: newStores });
@@ -1313,11 +1298,10 @@
     });
 
     function renderComparison(products, stores) {
-      // Pulisci intestazione e corpo
       theadRow.innerHTML = '<th><span>Supermercato</span></th>';
       tbodyComp.innerHTML = '';
 
-      // Crea intestazioni prodotti
+      // Rebuild header row
       products.forEach((prod, colIdx) => {
         const th = document.createElement('th');
         th.style.display = 'flex';
@@ -1341,9 +1325,10 @@
           async function saveEdit() {
             const newName = inputEdit.value.trim();
             if (newName && newName !== oldName) {
-              const newProducts = [...products];
+              const docSnap = await getDoc(COMP_DOC);
+              const data = docSnap.data();
+              const newProducts = data.products.slice();
               newProducts[colIdx] = newName;
-              // Aggiorna doc
               await updateDoc(COMP_DOC, { products: newProducts });
             }
             headerSpan.textContent = newName || oldName;
@@ -1371,11 +1356,13 @@
         deleteBtn.title = 'Rimuovi prodotto';
         deleteBtn.style.marginLeft = '6px';
         deleteBtn.addEventListener('click', async () => {
-          const newProducts = products.filter((_, idx) => idx !== colIdx);
-          const newStores = stores.map(s => {
-            const newPrices = s.prices.filter((_, pi) => pi !== colIdx);
-            return { name: s.name, prices: newPrices };
-          });
+          const docSnap = await getDoc(COMP_DOC);
+          const data = docSnap.data();
+          const newProducts = data.products.filter((_, idx) => idx !== colIdx);
+          const newStores = data.stores.map(s => ({
+            name: s.name,
+            prices: s.prices.filter((_, pi) => pi !== colIdx)
+          }));
           await setDoc(COMP_DOC, { products: newProducts, stores: newStores });
         });
 
@@ -1384,10 +1371,13 @@
         theadRow.appendChild(th);
       });
 
-      // Crea righe supermercati
+      // Build rows
       stores.forEach((storeObj, rowIdx) => {
         const tr = document.createElement('tr');
+
+        // First cell: store name
         const tdName = document.createElement('td');
+        tdName.setAttribute('data-label', 'Supermercato');
         tdName.style.display = 'flex';
         tdName.style.alignItems = 'center';
         tdName.style.justifyContent = 'space-between';
@@ -1409,7 +1399,9 @@
           async function saveEdit() {
             const newName = inputEdit.value.trim();
             if (newName && newName !== oldName) {
-              const newStores = [...stores];
+              const docSnap = await getDoc(COMP_DOC);
+              const data = docSnap.data();
+              const newStores = data.stores.slice();
               newStores[rowIdx].name = newName;
               await updateDoc(COMP_DOC, { stores: newStores });
             }
@@ -1437,24 +1429,28 @@
         deleteBtn.classList.add('delete-button');
         deleteBtn.title = 'Rimuovi supermercato';
         deleteBtn.addEventListener('click', async () => {
-          const newStores = stores.filter((_, idx) => idx !== rowIdx);
-          await setDoc(COMP_DOC, { products, stores: newStores });
+          const docSnap = await getDoc(COMP_DOC);
+          const data = docSnap.data();
+          const newStores = data.stores.filter((_, idx) => idx !== rowIdx);
+          await updateDoc(COMP_DOC, { stores: newStores });
         });
 
         tdName.appendChild(nameSpan);
         tdName.appendChild(deleteBtn);
         tr.appendChild(tdName);
 
-        // Celle prezzi
-        products.forEach((_, colIdx) => {
+        // Price cells
+        products.forEach((prod, colIdx) => {
           const td = document.createElement('td');
+          td.setAttribute('data-label', prod);
           const input = document.createElement('input');
           input.type = 'text';
           input.placeholder = '€';
           input.value = storeObj.prices[colIdx] || "";
           input.addEventListener('input', async () => {
-            const newStores = [...stores];
-            if (!newStores[rowIdx].prices) newStores[rowIdx].prices = [];
+            const docSnap = await getDoc(COMP_DOC);
+            const data = docSnap.data();
+            const newStores = data.stores.slice();
             newStores[rowIdx].prices[colIdx] = input.value;
             await updateDoc(COMP_DOC, { stores: newStores });
           });
@@ -1471,6 +1467,9 @@
     function updateHighlights() {
       const rows = Array.from(tbodyComp.rows);
       const colCount = theadRow.querySelectorAll('th').length - 1;
+      rows.forEach(row => {
+        Array.from(row.children).forEach(cell => cell.classList.remove('lowest-price'));
+      });
       for (let c = 1; c <= colCount; c++) {
         let minPrice = Infinity;
         let cells = [];
@@ -1489,12 +1488,6 @@
         cells.forEach(cell => cell.classList.add('lowest-price'));
       }
     }
-
-    // ==========================
-    // Carica tutto all'avvio (i listener sono già attivi)
-    document.addEventListener('DOMContentLoaded', () => {
-      // Nessuna azione extra necessaria
-    });
   </script>
 </body>
 </html>
