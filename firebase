@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Wishlist Condivisa</title>
+  <style>
+    :root {
+      --bg-light: #f9f9f9;
+      --text-light: #333;
+      --card-light: #fff;
+      --border-light: #ddd;
+      --bg-dark: #1e1e1e;
+      --text-dark: #e0e0e0;
+      --card-dark: #2c2c2c;
+      --border-dark: #444;
+    }
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background-color: var(--bg-light);
+      color: var(--text-light);
+      transition: background-color 0.3s, color 0.3s;
+    }
+    body.dark {
+      background-color: var(--bg-dark);
+      color: var(--text-dark);
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      padding: 0 20px;
+    }
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .theme-toggle {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      cursor: pointer;
+      padding: 6px 12px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      transition: background-color 0.2s;
+    }
+    .theme-toggle:hover {
+      background-color: #0056b3;
+    }
+    .wishlist-card {
+      background-color: var(--card-light);
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      transition: background-color 0.3s, border-color 0.3s;
+    }
+    body.dark .wishlist-card {
+      background-color: var(--card-dark);
+      border-color: var(--border-dark);
+    }
+    .new-item-form {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .new-item-form input[type="text"] {
+      flex: 1;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark .new-item-form input {
+      border-color: var(--border-dark);
+    }
+    .new-item-form button {
+      padding: 8px 16px;
+      background-color: #28a745;
+      color: #fff;
+      font-size: 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .new-item-form button:hover {
+      background-color: #218838;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    li {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border-light);
+      transition: border-color 0.3s;
+    }
+    body.dark li {
+      border-color: var(--border-dark);
+    }
+    .item-text {
+      flex: 1;
+      font-size: 16px;
+    }
+    .delete-button {
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .delete-button:hover {
+      background-color: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
+  <div class="container">
+    <div class="wishlist-card">
+      <h1>Wishlist Condivisa</h1>
+      <form id="new-item-form" class="new-item-form">
+        <input type="text" id="item-input" placeholder="Aggiungi un desiderio..." required />
+        <button type="submit">Aggiungi</button>
+      </form>
+      <ul id="wishlist"></ul>
+    </div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+
+    // CONFIGURAZIONE FIREBASE
+    const firebaseConfig = {
+      apiKey: "AIzaSyAx1f5ZGon--RhyWwlKDHHx2PX7znz4Y4c",
+      authDomain: "todosite-50224.firebaseapp.com",
+      projectId: "todosite-50224",
+      storageBucket: "todosite-50224.appspot.com",
+      messagingSenderId: "1007826815171",
+      appId: "1:1007826815171:web:d350392640ad08c0fbba76",
+      measurementId: "G-BT9DJBN90Q"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const WISHLIST = collection(db, 'wishlistItems');
+
+    // THEME TOGGLE
+    function setTheme(mode) {
+      if (mode === 'dark') {
+        document.body.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        document.body.classList.remove('dark');
+        localStorage.setItem('theme', 'light');
+      }
+    }
+    window.toggleTheme = function() {
+      const isDark = document.body.classList.contains('dark');
+      setTheme(isDark ? 'light' : 'dark');
+    };
+    (function() {
+      const saved = localStorage.getItem('theme');
+      if (saved === 'dark') setTheme('dark');
+    })();
+
+    // AGGIUNGI NUOVO ITEM
+    const newItemForm = document.getElementById('new-item-form');
+    const itemInput = document.getElementById('item-input');
+    const wishlistUl = document.getElementById('wishlist');
+
+    newItemForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const text = itemInput.value.trim();
+      if (!text) return;
+      await addDoc(WISHLIST, {
+        text,
+        timestamp: serverTimestamp()
+      });
+      itemInput.value = '';
+    });
+
+    // RENDER LISTA IN TEMPO REALE
+    const q = query(WISHLIST, orderBy('timestamp', 'asc'));
+    onSnapshot(q, snapshot => {
+      wishlistUl.innerHTML = '';
+      snapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const li = document.createElement('li');
+
+        const span = document.createElement('span');
+        span.textContent = data.text;
+        span.classList.add('item-text');
+
+        const delBtn = document.createElement('button');
+        delBtn.textContent = 'Elimina';
+        delBtn.classList.add('delete-button');
+        delBtn.addEventListener('click', async () => {
+          await deleteDoc(doc(db, 'wishlistItems', docSnap.id));
+        });
+
+        li.appendChild(span);
+        li.appendChild(delBtn);
+        wishlistUl.appendChild(li);
+      });
+    });
+  </script>
+</body>
+</html>
