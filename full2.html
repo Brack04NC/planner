@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MyPlanner Condiviso</title>
+  <title>MyPlanner Condiviso (Realtime DB)</title>
   <style>
     :root {
       --bg-light: #f0f2f5;
@@ -697,24 +697,20 @@
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
     import {
-      getFirestore,
-      collection,
-      doc,
-      addDoc,
-      setDoc,
-      updateDoc,
-      deleteDoc,
-      onSnapshot,
-      query,
-      orderBy,
-      serverTimestamp
-    } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+      getDatabase,
+      ref,
+      push,
+      set,
+      update,
+      remove,
+      onValue
+    } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
 
-    // ----------------------------
-    // CONFIGURAZIONE FIREBASE
+    // CONFIGURAZIONE FIREBASE (Realtime Database)
     const firebaseConfig = {
       apiKey: "AIzaSyAx1f5ZGon--RhyWwlKDHHx2PX7znz4Y4c",
       authDomain: "todosite-50224.firebaseapp.com",
+      databaseURL: "https://todosite-50224-default-rtdb.firebaseio.com",
       projectId: "todosite-50224",
       storageBucket: "todosite-50224.appspot.com",
       messagingSenderId: "1007826815171",
@@ -722,9 +718,8 @@
       measurementId: "G-BT9DJBN90Q"
     };
     const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    const db = getDatabase(app);
 
-    // ----------------------------
     // NAVIGATION TABS
     const navLinks = document.querySelectorAll('.nav-link');
     const pages = document.querySelectorAll('.page');
@@ -737,7 +732,6 @@
       });
     });
 
-    // ----------------------------
     // THEME TOGGLE
     function setTheme(mode) {
       if (mode === 'dark') {
@@ -758,29 +752,28 @@
     })();
 
     // ==========================
-    // TODO LIST MULTI-LIST CONDIVISA
-    const TODO_LISTS = collection(db, 'todoLists');
+    // TODO LIST MULTI-LIST (Realtime DB)
+    const todoListsRef = ref(db, 'todoLists');
+
     const newListForm = document.getElementById('new-list-form');
     const newListInput = document.getElementById('new-list-input');
     const listsContainer = document.getElementById('lists-container');
-    let listIds = new Set();
 
     // Crea nuova lista
-    newListForm.addEventListener('submit', async e => {
+    newListForm.addEventListener('submit', e => {
       e.preventDefault();
       const name = newListInput.value.trim();
       if (!name) return;
-      await addDoc(TODO_LISTS, { name });
+      const newListRef = push(todoListsRef);
+      set(newListRef, { name });
       newListInput.value = '';
     });
 
     // Ascolta tutte le liste
-    onSnapshot(TODO_LISTS, snapshot => {
+    onValue(todoListsRef, snapshot => {
       listsContainer.innerHTML = '';
-      listIds.clear();
-      snapshot.docs.forEach(docSnap => {
-        const listObj = { id: docSnap.id, name: docSnap.data().name };
-        listIds.add(listObj.id);
+      snapshot.forEach(childSnap => {
+        const listObj = { id: childSnap.key, name: childSnap.val().name };
         renderTodoList(listObj);
       });
     });
@@ -806,10 +799,10 @@
         header.replaceChild(inputEdit, headerSpan);
         inputEdit.focus();
 
-        async function saveHeaderEdit() {
+        function saveHeaderEdit() {
           const newName = inputEdit.value.trim();
           if (newName && newName !== oldName) {
-            await updateDoc(doc(db, 'todoLists', listObj.id), { name: newName });
+            update(ref(db, `todoLists/${listObj.id}`), { name: newName });
           }
           headerSpan.textContent = newName || oldName;
           header.replaceChild(headerSpan, inputEdit);
@@ -876,19 +869,13 @@
       doneSection.appendChild(doneUl);
       card.appendChild(doneSection);
 
-      // Elimina lista
+      // Elimina lista (insieme a tutti i suoi task)
       const deleteListBtn = document.createElement('button');
       deleteListBtn.classList.add('delete-list-button');
       deleteListBtn.textContent = 'Elimina Lista';
-      deleteListBtn.addEventListener('click', async () => {
+      deleteListBtn.addEventListener('click', () => {
         if (confirm(`Eliminare la lista “${listObj.name}”?`)) {
-          // Elimina tutti i task nella sottocollezione poi la lista
-          const tasksCol = collection(db, 'todoLists', listObj.id, 'tasks');
-          onSnapshot(tasksCol, async snap => {
-            const batchDeletes = snap.docs.map(d => deleteDoc(doc(db, 'todoLists', listObj.id, 'tasks', d.id)));
-            await Promise.all(batchDeletes);
-            await deleteDoc(doc(db, 'todoLists', listObj.id));
-          });
+          remove(ref(db, `todoLists/${listObj.id}`));
         }
       });
       card.appendChild(deleteListBtn);
@@ -896,29 +883,30 @@
       listsContainer.appendChild(card);
 
       // Gestione submit form task
-      taskForm.addEventListener('submit', async e => {
+      taskForm.addEventListener('submit', e => {
         e.preventDefault();
         const text = taskInput.value.trim();
         const desc = descInput.value.trim();
         if (!text) return;
-        await addDoc(collection(db, 'todoLists', listObj.id, 'tasks'), {
+        const newTaskRef = push(ref(db, `todoLists/${listObj.id}/tasks`));
+        set(newTaskRef, {
           text,
           desc,
           done: false,
-          timestamp: serverTimestamp()
+          timestamp: Date.now()
         });
         taskInput.value = '';
         descInput.value = '';
       });
 
       // Ascolta i task di questa lista
-      const tasksQuery = query(collection(db, 'todoLists', listObj.id, 'tasks'), orderBy('timestamp', 'asc'));
-      onSnapshot(tasksQuery, snapshot => {
+      const tasksRef = ref(db, `todoLists/${listObj.id}/tasks`);
+      onValue(tasksRef, snapshot => {
         todoUl.innerHTML = '';
         doneUl.innerHTML = '';
-        snapshot.docs.forEach(taskSnap => {
-          const tdata = taskSnap.data();
-          const li = createTaskElement(taskSnap.id, tdata.text, tdata.desc, tdata.done, listObj.id);
+        snapshot.forEach(taskSnap => {
+          const tdata = taskSnap.val();
+          const li = createTaskElement(taskSnap.key, tdata.text, tdata.desc, tdata.done, listObj.id);
           if (tdata.done) {
             doneUl.appendChild(li);
           } else {
@@ -954,8 +942,8 @@
       }
 
       // Toggle done
-      checkbox.addEventListener('change', async () => {
-        await updateDoc(doc(db, 'todoLists', listId, 'tasks', taskId), { done: checkbox.checked });
+      checkbox.addEventListener('change', () => {
+        update(ref(db, `todoLists/${listId}/tasks/${taskId}`), { done: checkbox.checked });
       });
 
       // Modifica testo
@@ -968,10 +956,10 @@
         li.replaceChild(inputEdit, label);
         inputEdit.focus();
 
-        async function saveEdit() {
+        function saveEdit() {
           const newText = inputEdit.value.trim();
           if (newText && newText !== old) {
-            await updateDoc(doc(db, 'todoLists', listId, 'tasks', taskId), { text: newText });
+            update(ref(db, `todoLists/${listId}/tasks/${taskId}`), { text: newText });
           }
           label.textContent = newText || old;
           li.replaceChild(label, inputEdit);
@@ -1004,9 +992,9 @@
           li.replaceChild(inputEdit, descSpan);
           inputEdit.focus();
 
-          async function saveEdit() {
+          function saveEdit() {
             const newDesc = inputEdit.value.trim();
-            await updateDoc(doc(db, 'todoLists', listId, 'tasks', taskId), { desc: newDesc });
+            update(ref(db, `todoLists/${listId}/tasks/${taskId}`), { desc: newDesc });
             descSpan.textContent = newDesc;
             li.replaceChild(descSpan, inputEdit);
           }
@@ -1034,8 +1022,8 @@
       delBtn.style.fontSize = '12px';
       delBtn.style.padding = '4px';
       delBtn.style.marginTop = '6px';
-      delBtn.addEventListener('click', async () => {
-        await deleteDoc(doc(db, 'todoLists', listId, 'tasks', taskId));
+      delBtn.addEventListener('click', () => {
+        remove(ref(db, `todoLists/${listId}/tasks/${taskId}`));
       });
       li.appendChild(delBtn);
 
@@ -1043,8 +1031,8 @@
     }
 
     // ==========================
-    // SHOPPING LIST CONDIVISA
-    const SHOPPING = collection(db, 'shoppingItems');
+    // SHOPPING LIST CONDIVISA (Realtime DB)
+    const shoppingRef = ref(db, 'shoppingItems');
     const newShoppingForm = document.getElementById('new-shopping-form');
     const shopItemInput = document.getElementById('shop-item-input');
     const shopQtyInput = document.getElementById('shop-qty-input');
@@ -1052,31 +1040,32 @@
     const shoppingTodoList = document.getElementById('shopping-todo-list');
     const shoppingDoneList = document.getElementById('shopping-done-list');
 
-    newShoppingForm.addEventListener('submit', async e => {
+    newShoppingForm.addEventListener('submit', e => {
       e.preventDefault();
       const text = shopItemInput.value.trim();
       const qty = shopQtyInput.value.trim();
       const desc = shopDescInput.value.trim();
       if (!text || !qty) return;
-      await addDoc(SHOPPING, {
+      const newItemRef = push(shoppingRef);
+      set(newItemRef, {
         text,
         qty,
         desc,
         done: false,
-        timestamp: serverTimestamp()
+        timestamp: Date.now()
       });
       shopItemInput.value = '';
       shopQtyInput.value = '';
       shopDescInput.value = '';
     });
 
-    const shopQuery = query(SHOPPING, orderBy('timestamp', 'asc'));
-    onSnapshot(shopQuery, snapshot => {
+    onValue(shoppingRef, snapshot => {
       shoppingTodoList.innerHTML = '';
       shoppingDoneList.innerHTML = '';
-      snapshot.docs.forEach(docSnap => {
-        const data = docSnap.data();
-        const li = createShoppingItem(docSnap.id, data.text, data.qty, data.desc, data.done);
+      snapshot.forEach(childSnap => {
+        const data = childSnap.val();
+        const id = childSnap.key;
+        const li = createShoppingItem(id, data.text, data.qty, data.desc, data.done);
         if (data.done) {
           shoppingDoneList.appendChild(li);
         } else {
@@ -1115,8 +1104,8 @@
       }
 
       // Toggle done
-      checkbox.addEventListener('change', async () => {
-        await updateDoc(doc(db, 'shoppingItems', id), { done: checkbox.checked });
+      checkbox.addEventListener('change', () => {
+        update(ref(db, `shoppingItems/${id}`), { done: checkbox.checked });
       });
 
       // Modifica nome/quantità
@@ -1140,13 +1129,12 @@
         li.replaceChild(editDiv, infoDiv);
         nameInputEdit.focus();
 
-        async function saveEdit() {
+        function saveEdit() {
           const newName = nameInputEdit.value.trim();
           const newQty = qtyInputEdit.value.trim();
           if (newName && newQty) {
-            await updateDoc(doc(db, 'shoppingItems', id), { text: newName, qty: newQty });
+            update(ref(db, `shoppingItems/${id}`), { text: newName, qty: newQty });
           }
-          // Ripristina infoDiv
           editDiv.replaceWith(infoDiv);
         }
 
@@ -1185,9 +1173,9 @@
           li.replaceChild(inputEdit, descSpan);
           inputEdit.focus();
 
-          async function saveEdit() {
+          function saveEdit() {
             const newDesc = inputEdit.value.trim();
-            await updateDoc(doc(db, 'shoppingItems', id), { desc: newDesc });
+            update(ref(db, `shoppingItems/${id}`), { desc: newDesc });
             descSpan.textContent = newDesc;
             li.replaceChild(descSpan, inputEdit);
           }
@@ -1213,8 +1201,8 @@
       const deleteBtn = document.createElement('button');
       deleteBtn.textContent = 'Elimina';
       deleteBtn.classList.add('delete-item-button');
-      deleteBtn.addEventListener('click', async () => {
-        await deleteDoc(doc(db, 'shoppingItems', id));
+      deleteBtn.addEventListener('click', () => {
+        remove(ref(db, `shoppingItems/${id}`));
       });
       li.appendChild(deleteBtn);
 
@@ -1222,28 +1210,29 @@
     }
 
     // ==========================
-    // WISHLIST CONDIVISA
-    const WISHLIST = collection(db, 'wishlistItems');
+    // WISHLIST CONDIVISA (Realtime DB)
+    const wishlistRef = ref(db, 'wishlistItems');
     const newWishlistForm = document.getElementById('new-wishlist-form');
     const wishlistItemInput = document.getElementById('wishlist-item-input');
     const wishlistList = document.getElementById('wishlist-list');
 
-    newWishlistForm.addEventListener('submit', async e => {
+    newWishlistForm.addEventListener('submit', e => {
       e.preventDefault();
       const text = wishlistItemInput.value.trim();
       if (!text) return;
-      await addDoc(WISHLIST, {
+      const newItemRef = push(wishlistRef);
+      set(newItemRef, {
         text,
-        timestamp: serverTimestamp()
+        timestamp: Date.now()
       });
       wishlistItemInput.value = '';
     });
 
-    const wishlistQuery = query(WISHLIST, orderBy('timestamp', 'asc'));
-    onSnapshot(wishlistQuery, snapshot => {
+    onValue(wishlistRef, snapshot => {
       wishlistList.innerHTML = '';
-      snapshot.docs.forEach(docSnap => {
-        const data = docSnap.data();
+      snapshot.forEach(childSnap => {
+        const data = childSnap.val();
+        const id = childSnap.key;
         const li = document.createElement('li');
 
         const span = document.createElement('span');
@@ -1253,8 +1242,8 @@
         const delBtn = document.createElement('button');
         delBtn.textContent = 'Elimina';
         delBtn.classList.add('delete-button');
-        delBtn.addEventListener('click', async () => {
-          await deleteDoc(doc(db, 'wishlistItems', docSnap.id));
+        delBtn.addEventListener('click', () => {
+          remove(ref(db, `wishlistItems/${id}`));
         });
 
         li.appendChild(span);
@@ -1264,269 +1253,255 @@
     });
 
     // ==========================
-    // ==========================
-// COMPARATORE PREZZI CONDIVISO (Realtime DB)
-import { ref, set, onValue, remove, update } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-database.js";
+    // COMPARATORE PREZZI CONDIVISO (Realtime DB)
+    const compRef = ref(db, 'comparisonData/default');
 
-const compRef = ref(db, 'comparisonData/default');
+    const addProductForm = document.getElementById('add-product-form');
+    const productNameInput = document.getElementById('product-name-input');
+    const addStoreForm = document.getElementById('add-store-form');
+    const storeNameInput = document.getElementById('store-name-input');
+    const comparisonTable = document.getElementById('comparison-table');
+    const theadRow = comparisonTable.querySelector('thead tr');
+    const tbodyComp = comparisonTable.querySelector('tbody');
 
-const addProductForm = document.getElementById('add-product-form');
-const productNameInput = document.getElementById('product-name-input');
-const addStoreForm = document.getElementById('add-store-form');
-const storeNameInput = document.getElementById('store-name-input');
-const comparisonTable = document.getElementById('comparison-table');
-const theadRow = comparisonTable.querySelector('thead tr');
-const tbodyComp = comparisonTable.querySelector('tbody');
-
-// Inizializza documento se non esiste
-onValue(compRef, snapshot => {
-  if (!snapshot.exists()) {
-    // Se non esiste, crealo con array vuoti
-    set(compRef, { products: [], stores: [] });
-    return;
-  }
-  // Se esiste, renderizza i dati
-  const data = snapshot.val();
-  renderComparison(data.products || [], data.stores || []);
-});
-
-// Aggiungi nuovo prodotto
-addProductForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const productName = productNameInput.value.trim();
-  if (!productName) return;
-
-  // Leggi una sola volta lo stato corrente di comparisonData/default
-  onValue(compRef, snapshot => {
-    const data = snapshot.val() || { products: [], stores: [] };
-    const newProducts = [...(data.products || []), productName];
-    const newStores = (data.stores || []).map(s => ({
-      name: s.name,
-      prices: [...(s.prices || []), ""]
-    }));
-    // Sovrascrivi l’intero nodo con i nuovi array
-    set(compRef, { products: newProducts, stores: newStores });
-    productNameInput.value = '';
-  }, { onlyOnce: true });
-});
-
-// Aggiungi nuovo supermercato
-addStoreForm.addEventListener('submit', e => {
-  e.preventDefault();
-  const storeName = storeNameInput.value.trim();
-  if (!storeName) return;
-
-  onValue(compRef, snapshot => {
-    const data = snapshot.val() || { products: [], stores: [] };
-    const newStoreObj = { name: storeName, prices: Array((data.products || []).length).fill("") };
-    const newStores = [...(data.stores || []), newStoreObj];
-    set(compRef, { products: data.products || [], stores: newStores });
-    storeNameInput.value = '';
-  }, { onlyOnce: true });
-});
-
-function renderComparison(products, stores) {
-  // Pulisci intestazione e corpo
-  theadRow.innerHTML = '<th><span>Supermercato</span></th>';
-  tbodyComp.innerHTML = '';
-
-  // Crea intestazioni prodotti
-  products.forEach((prod, colIdx) => {
-    const th = document.createElement('th');
-    th.style.display = 'flex';
-    th.style.alignItems = 'center';
-    th.style.justifyContent = 'space-between';
-
-    const headerSpan = document.createElement('span');
-    headerSpan.textContent = prod;
-    headerSpan.style.flex = '1';
-    headerSpan.style.cursor = 'pointer';
-
-    // Doppio clic/tap per modificare nome prodotto
-    function startProductEdit() {
-      const oldName = headerSpan.textContent;
-      const inputEdit = document.createElement('input');
-      inputEdit.type = 'text';
-      inputEdit.value = oldName;
-      inputEdit.classList.add('edit-input');
-      th.replaceChild(inputEdit, headerSpan);
-      inputEdit.focus();
-
-      function saveEdit() {
-        const newName = inputEdit.value.trim();
-        if (newName && newName !== oldName) {
-          // Leggi e poi riscrivi il nodo intero
-          onValue(compRef, snap => {
-            const data = snap.val() || { products: [], stores: [] };
-            const newProducts = data.products.slice();
-            newProducts[colIdx] = newName;
-            set(compRef, { products: newProducts, stores: data.stores || [] });
-          }, { onlyOnce: true });
-        }
-        headerSpan.textContent = newName || oldName;
-        th.replaceChild(headerSpan, inputEdit);
+    // Inizializza nodo se non esiste
+    onValue(compRef, snapshot => {
+      if (!snapshot.exists()) {
+        set(compRef, { products: [], stores: [] });
+        return;
       }
-
-      inputEdit.addEventListener('blur', saveEdit);
-      inputEdit.addEventListener('keydown', ev => {
-        if (ev.key === 'Enter') {
-          ev.preventDefault();
-          saveEdit();
-        } else if (ev.key === 'Escape') {
-          th.replaceChild(headerSpan, inputEdit);
-        }
-      });
-    }
-
-    headerSpan.addEventListener('dblclick', startProductEdit);
-    headerSpan.addEventListener('touchend', e => {
-      e.preventDefault();
-      startProductEdit();
+      const data = snapshot.val();
+      renderComparison(data.products || [], data.stores || []);
     });
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = '✕';
-    deleteBtn.classList.add('delete-button');
-    deleteBtn.title = 'Rimuovi prodotto';
-    deleteBtn.style.marginLeft = '6px';
-    deleteBtn.addEventListener('click', () => {
+    addProductForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const productName = productNameInput.value.trim();
+      if (!productName) return;
+
       onValue(compRef, snap => {
         const data = snap.val() || { products: [], stores: [] };
-        const newProducts = data.products.filter((_, idx) => idx !== colIdx);
+        const newProducts = [...(data.products || []), productName];
         const newStores = (data.stores || []).map(s => ({
           name: s.name,
-          prices: s.prices.filter((_, pi) => pi !== colIdx)
+          prices: [...(s.prices || []), ""]
         }));
         set(compRef, { products: newProducts, stores: newStores });
+        productNameInput.value = '';
       }, { onlyOnce: true });
     });
 
-    th.appendChild(headerSpan);
-    th.appendChild(deleteBtn);
-    theadRow.appendChild(th);
-  });
-
-  // Crea righe supermercati
-  stores.forEach((storeObj, rowIdx) => {
-    const tr = document.createElement('tr');
-    const tdName = document.createElement('td');
-    tdName.style.display = 'flex';
-    tdName.style.alignItems = 'center';
-    tdName.style.justifyContent = 'space-between';
-
-    const nameSpan = document.createElement('span');
-    nameSpan.textContent = storeObj.name;
-    nameSpan.style.flex = '1';
-    nameSpan.style.cursor = 'pointer';
-
-    function startStoreEdit() {
-      const oldName = nameSpan.textContent;
-      const inputEdit = document.createElement('input');
-      inputEdit.type = 'text';
-      inputEdit.value = oldName;
-      inputEdit.classList.add('edit-input');
-      tdName.replaceChild(inputEdit, nameSpan);
-      inputEdit.focus();
-
-      function saveEdit() {
-        const newName = inputEdit.value.trim();
-        if (newName && newName !== oldName) {
-          onValue(compRef, snap => {
-            const data = snap.val() || { products: [], stores: [] };
-            const newStores = data.stores.slice();
-            newStores[rowIdx].name = newName;
-            set(compRef, { products: data.products || [], stores: newStores });
-          }, { onlyOnce: true });
-        }
-        nameSpan.textContent = newName || oldName;
-        tdName.replaceChild(nameSpan, inputEdit);
-      }
-
-      inputEdit.addEventListener('blur', saveEdit);
-      inputEdit.addEventListener('keydown', ev => {
-        if (ev.key === 'Enter') {
-          ev.preventDefault();
-          saveEdit();
-        } else if (ev.key === 'Escape') {
-          tdName.replaceChild(nameSpan, inputEdit);
-        }
-      });
-    }
-
-    nameSpan.addEventListener('dblclick', startStoreEdit);
-    nameSpan.addEventListener('touchend', e => {
+    addStoreForm.addEventListener('submit', e => {
       e.preventDefault();
-      startStoreEdit();
-    });
+      const storeName = storeNameInput.value.trim();
+      if (!storeName) return;
 
-    const deleteBtn = document.createElement('button');
-    deleteBtn.textContent = '✕';
-    deleteBtn.classList.add('delete-button');
-    deleteBtn.title = 'Rimuovi supermercato';
-    deleteBtn.addEventListener('click', () => {
       onValue(compRef, snap => {
         const data = snap.val() || { products: [], stores: [] };
-        const newStores = data.stores.filter((_, idx) => idx !== rowIdx);
+        const newStoreObj = { name: storeName, prices: Array((data.products || []).length).fill("") };
+        const newStores = [...(data.stores || []), newStoreObj];
         set(compRef, { products: data.products || [], stores: newStores });
+        storeNameInput.value = '';
       }, { onlyOnce: true });
     });
 
-    tdName.appendChild(nameSpan);
-    tdName.appendChild(deleteBtn);
-    tr.appendChild(tdName);
+    function renderComparison(products, stores) {
+      // Pulisci intestazione e corpo
+      theadRow.innerHTML = '<th><span>Supermercato</span></th>';
+      tbodyComp.innerHTML = '';
 
-    // Crea le celle per i prezzi
-    products.forEach((_, colIdx) => {
-      const td = document.createElement('td');
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.placeholder = '€';
-      input.value = storeObj.prices[colIdx] || "";
-      input.addEventListener('input', () => {
-        onValue(compRef, snap => {
-          const data = snap.val() || { products: [], stores: [] };
-          const newStores = data.stores.slice();
-          newStores[rowIdx].prices[colIdx] = input.value;
-          set(compRef, { products: data.products || [], stores: newStores });
-        }, { onlyOnce: true });
-      });
-      td.appendChild(input);
-      tr.appendChild(td);
-    });
+      // Crea intestazioni prodotti
+      products.forEach((prod, colIdx) => {
+        const th = document.createElement('th');
+        th.style.display = 'flex';
+        th.style.alignItems = 'center';
+        th.style.justifyContent = 'space-between';
 
-    tbodyComp.appendChild(tr);
-  });
+        const headerSpan = document.createElement('span');
+        headerSpan.textContent = prod;
+        headerSpan.style.flex = '1';
+        headerSpan.style.cursor = 'pointer';
 
-  updateHighlights();
-}
+        function startProductEdit() {
+          const oldName = headerSpan.textContent;
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = oldName;
+          inputEdit.classList.add('edit-input');
+          th.replaceChild(inputEdit, headerSpan);
+          inputEdit.focus();
 
-function updateHighlights() {
-  const rows = Array.from(tbodyComp.rows);
-  const colCount = theadRow.querySelectorAll('th').length - 1;
-  for (let c = 1; c <= colCount; c++) {
-    let minPrice = Infinity;
-    let cells = [];
-    rows.forEach(row => {
-      const cell = row.children[c];
-      const val = parseFloat(cell.querySelector('input').value.replace(',', '.'));
-      if (!isNaN(val)) {
-        if (val < minPrice) {
-          minPrice = val;
-          cells = [cell];
-        } else if (val === minPrice) {
-          cells.push(cell);
+          function saveEdit() {
+            const newName = inputEdit.value.trim();
+            if (newName && newName !== oldName) {
+              onValue(compRef, snap => {
+                const data = snap.val() || { products: [], stores: [] };
+                const newProducts = data.products.slice();
+                newProducts[colIdx] = newName;
+                set(compRef, { products: newProducts, stores: data.stores || [] });
+              }, { onlyOnce: true });
+            }
+            headerSpan.textContent = newName || oldName;
+            th.replaceChild(headerSpan, inputEdit);
+          }
+
+          inputEdit.addEventListener('blur', saveEdit);
+          inputEdit.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              saveEdit();
+            } else if (ev.key === 'Escape') {
+              th.replaceChild(headerSpan, inputEdit);
+            }
+          });
         }
+
+        headerSpan.addEventListener('dblclick', startProductEdit);
+        headerSpan.addEventListener('touchend', e => {
+          e.preventDefault();
+          startProductEdit();
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '✕';
+        deleteBtn.classList.add('delete-button');
+        deleteBtn.title = 'Rimuovi prodotto';
+        deleteBtn.style.marginLeft = '6px';
+        deleteBtn.addEventListener('click', () => {
+          onValue(compRef, snap => {
+            const data = snap.val() || { products: [], stores: [] };
+            const newProducts = data.products.filter((_, idx) => idx !== colIdx);
+            const newStores = (data.stores || []).map(s => ({
+              name: s.name,
+              prices: s.prices.filter((_, pi) => pi !== colIdx)
+            }));
+            set(compRef, { products: newProducts, stores: newStores });
+          }, { onlyOnce: true });
+        });
+
+        th.appendChild(headerSpan);
+        th.appendChild(deleteBtn);
+        theadRow.appendChild(th);
+      });
+
+      // Crea righe supermercati
+      stores.forEach((storeObj, rowIdx) => {
+        const tr = document.createElement('tr');
+        const tdName = document.createElement('td');
+        tdName.style.display = 'flex';
+        tdName.style.alignItems = 'center';
+        tdName.style.justifyContent = 'space-between';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = storeObj.name;
+        nameSpan.style.flex = '1';
+        nameSpan.style.cursor = 'pointer';
+
+        function startStoreEdit() {
+          const oldName = nameSpan.textContent;
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = oldName;
+          inputEdit.classList.add('edit-input');
+          tdName.replaceChild(inputEdit, nameSpan);
+          inputEdit.focus();
+
+          function saveEdit() {
+            const newName = inputEdit.value.trim();
+            if (newName && newName !== oldName) {
+              onValue(compRef, snap => {
+                const data = snap.val() || { products: [], stores: [] };
+                const newStores = data.stores.slice();
+                newStores[rowIdx].name = newName;
+                set(compRef, { products: data.products || [], stores: newStores });
+              }, { onlyOnce: true });
+            }
+            nameSpan.textContent = newName || oldName;
+            tdName.replaceChild(nameSpan, inputEdit);
+          }
+
+          inputEdit.addEventListener('blur', saveEdit);
+          inputEdit.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              saveEdit();
+            } else if (ev.key === 'Escape') {
+              tdName.replaceChild(nameSpan, inputEdit);
+            }
+          });
+        }
+
+        nameSpan.addEventListener('dblclick', startStoreEdit);
+        nameSpan.addEventListener('touchend', e => {
+          e.preventDefault();
+          startStoreEdit();
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '✕';
+        deleteBtn.classList.add('delete-button');
+        deleteBtn.title = 'Rimuovi supermercato';
+        deleteBtn.addEventListener('click', () => {
+          onValue(compRef, snap => {
+            const data = snap.val() || { products: [], stores: [] };
+            const newStores = data.stores.filter((_, idx) => idx !== rowIdx);
+            set(compRef, { products: data.products || [], stores: newStores });
+          }, { onlyOnce: true });
+        });
+
+        tdName.appendChild(nameSpan);
+        tdName.appendChild(deleteBtn);
+        tr.appendChild(tdName);
+
+        // Celle prezzi
+        products.forEach((_, colIdx) => {
+          const td = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.placeholder = '€';
+          input.value = storeObj.prices[colIdx] || "";
+          input.addEventListener('input', () => {
+            onValue(compRef, snap => {
+              const data = snap.val() || { products: [], stores: [] };
+              const newStores = data.stores.slice();
+              newStores[rowIdx].prices[colIdx] = input.value;
+              set(compRef, { products: data.products || [], stores: newStores });
+            }, { onlyOnce: true });
+          });
+          td.appendChild(input);
+          tr.appendChild(td);
+        });
+
+        tbodyComp.appendChild(tr);
+      });
+
+      updateHighlights();
+    }
+
+    function updateHighlights() {
+      const rows = Array.from(tbodyComp.rows);
+      const colCount = theadRow.querySelectorAll('th').length - 1;
+      for (let c = 1; c <= colCount; c++) {
+        let minPrice = Infinity;
+        let cells = [];
+        rows.forEach(row => {
+          const cell = row.children[c];
+          const val = parseFloat(cell.querySelector('input').value.replace(',', '.'));
+          if (!isNaN(val)) {
+            if (val < minPrice) {
+              minPrice = val;
+              cells = [cell];
+            } else if (val === minPrice) {
+              cells.push(cell);
+            }
+          }
+        });
+        cells.forEach(cell => cell.classList.add('lowest-price'));
       }
-    });
-    cells.forEach(cell => cell.classList.add('lowest-price'));
-  }
-}
+    }
 
     // ==========================
-    // Carica tutto all'avvio (i listener sono già attivi)
-    document.addEventListener('DOMContentLoaded', () => {
-      // Nessuna azione extra necessaria
-    });
+    // Il real-time listener carica tutto automaticamente
   </script>
 </body>
 </html>
