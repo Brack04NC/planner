@@ -412,16 +412,17 @@
     }
 
     /* ==========================
-       Wishlist Styles
+       Wishlist (multi) Styles
     =========================== */
-    #wishlist-page .new-item-form {
+    #wishlist-page .new-list-form {
       display: flex;
       gap: 10px;
-      margin-bottom: 20px;
+      flex-wrap: wrap;
       justify-content: center;
+      margin-bottom: 20px;
     }
-    #wishlist-page .new-item-form input[type="text"] {
-      flex: 1;
+    #wishlist-page .new-list-form input[type="text"] {
+      flex: 1 1 200px;
       padding: 8px;
       font-size: 14px;
       border: 1px solid var(--border-light);
@@ -430,12 +431,66 @@
       color: inherit;
       transition: border-color 0.3s;
     }
-    body.dark #wishlist-page .new-item-form input {
+    body.dark #wishlist-page .new-list-form input {
       border-color: var(--border-dark);
     }
-    #wishlist-page .new-item-form button {
+    #wishlist-page .new-list-form button {
       padding: 8px 16px;
       font-size: 14px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #wishlist-page .new-list-form button:hover {
+      background-color: #0056b3;
+    }
+    #wishlist-page #wishlists-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    #wishlist-page .wishlist-card {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 15px;
+      transition: border-color 0.3s;
+    }
+    body.dark #wishlist-page .wishlist-card {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .wishlist-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      text-align: center;
+      cursor: pointer;
+    }
+    #wishlist-page .item-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    #wishlist-page .item-form input[type="text"] {
+      flex: 1 1 150px;
+      padding: 6px;
+      font-size: 13px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #wishlist-page .item-form input {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .item-form button {
+      padding: 6px 12px;
+      font-size: 13px;
       background-color: #28a745;
       color: #fff;
       border: none;
@@ -443,30 +498,58 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    #wishlist-page .new-item-form button:hover {
+    #wishlist-page .item-form button:hover {
       background-color: #218838;
     }
-    #wishlist-page ul {
+    #wishlist-page .list-section {
+      margin-top: 10px;
+    }
+    #wishlist-page .list-section h4 {
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 4px;
+    }
+    body.dark #wishlist-page .list-section h4 {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .item-list {
       list-style: none;
-      padding: 0;
+      padding-left: 0;
       margin: 0;
     }
-    #wishlist-page li {
+    #wishlist-page .item-list li {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
+      padding: 6px 0;
       border-bottom: 1px solid var(--border-light);
-      transition: border-color 0.3s;
     }
-    body.dark #wishlist-page li {
+    body.dark #wishlist-page .item-list li {
       border-color: var(--border-dark);
     }
-    #wishlist-page .item-text {
-      flex: 1;
-      font-size: 16px;
+    #wishlist-page .item-list li:last-child {
+      border-bottom: none;
     }
-    #wishlist-page .delete-button {
+    #wishlist-page .item-label,
+    #wishlist-page .item-label-edit {
+      flex: 1;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #wishlist-page .item-label-edit {
+      border: 1px solid var(--border-light);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 14px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #wishlist-page .item-label-edit {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .delete-item-button {
       background-color: #dc3545;
       color: #fff;
       border: none;
@@ -476,7 +559,22 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    #wishlist-page .delete-button:hover {
+    #wishlist-page .delete-item-button:hover {
+      background-color: #c82333;
+    }
+    #wishlist-page .delete-wishlist-button {
+      margin-top: 10px;
+      padding: 6px;
+      font-size: 12px;
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      align-self: center;
+      transition: background-color 0.2s;
+    }
+    #wishlist-page .delete-wishlist-button:hover {
       background-color: #c82333;
     }
 
@@ -557,39 +655,6 @@
       background-color: #d4edda; /* verde chiaro */
     }
 
-    /* Responsive per mobile */
-    @media screen and (max-width: 768px) {
-      .comparison-table {
-        font-size: 14px;
-        overflow-x: auto;
-        display: block;
-        white-space: nowrap;
-      }
-      .comparison-table th, 
-      .comparison-table td {
-        padding: 8px 10px;
-      }
-      .comparison-table thead {
-        display: none;
-      }
-      .comparison-table tr {
-        display: block;
-        margin-bottom: 10px;
-        border-bottom: 1px solid #ddd;
-      }
-      .comparison-table td {
-        display: flex;
-        justify-content: space-between;
-        padding: 8px;
-        border: none;
-        border-bottom: 1px solid #eee;
-      }
-      .comparison-table td::before {
-        content: attr(data-label);
-        font-weight: bold;
-      }
-    }
-
     /* Responsive generale */
     @media (max-width: 600px) {
       nav {
@@ -602,7 +667,7 @@
       }
       #todo-page .todo-list-card,
       #shopping-page li,
-      #wishlist-page li,
+      .wishlist-card,
       .comparison-table,
       #comparison-page .forms-row {
         width: 100%;
@@ -656,12 +721,12 @@
 
     <!-- Wishlist Page -->
     <section id="wishlist-page" class="page">
-      <h2>Wishlist Condivisa</h2>
-      <form id="new-wishlist-form" class="new-item-form">
-        <input type="text" id="wishlist-item-input" placeholder="Aggiungi un desiderio..." required>
-        <button type="submit">Aggiungi</button>
+      <h2>Wishlist Multiple</h2>
+      <form id="new-wishlist-form" class="new-list-form">
+        <input type="text" id="new-wishlist-input" placeholder="Nome nuova wishlist..." required>
+        <button type="submit">Crea Wishlist</button>
       </form>
-      <ul id="wishlist-list"></ul>
+      <div id="wishlists-container"></div>
     </section>
 
     <!-- Comparison Page -->
@@ -704,7 +769,8 @@
       query,
       orderBy,
       serverTimestamp,
-      getDoc
+      getDoc,
+      getDocs
     } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
 
     // CONFIGURAZIONE FIREBASE (Firestore)
@@ -871,10 +937,12 @@
       deleteListBtn.textContent = 'Elimina Lista';
       deleteListBtn.addEventListener('click', async () => {
         if (confirm(`Eliminare la lista “${listObj.name}”?`)) {
+          // Elimina tutti i task sottostanti
           const tasksCol = collection(db, 'todoLists', listObj.id, 'tasks');
           const snapshot = await getDocs(tasksCol);
           const deletes = snapshot.docs.map(d => deleteDoc(doc(db, 'todoLists', listObj.id, 'tasks', d.id)));
           await Promise.all(deletes);
+          // Elimina la lista stessa
           await deleteDoc(doc(db, 'todoLists', listObj.id));
         }
       });
@@ -1209,46 +1277,191 @@
     }
 
     // ==========================
-    // WISHLIST CONDIVISA (Firestore)
-    const WISHLIST = collection(db, 'wishlistItems');
-    const newWishlistForm = document.getElementById('new-wishlist-form');
-    const wishlistItemInput = document.getElementById('wishlist-item-input');
-    const wishlistList = document.getElementById('wishlist-list');
+    // WISHLIST MULTIPLE (Firestore)
+    const WISHLISTS = collection(db, 'wishlists');
+    const newWishlistForm2 = document.getElementById('new-wishlist-form');
+    const newWishlistInput = document.getElementById('new-wishlist-input');
+    const wishlistsContainer = document.getElementById('wishlists-container');
 
-    newWishlistForm.addEventListener('submit', async e => {
+    newWishlistForm2.addEventListener('submit', async e => {
       e.preventDefault();
-      const text = wishlistItemInput.value.trim();
-      if (!text) return;
-      await addDoc(WISHLIST, {
-        text,
-        timestamp: serverTimestamp()
-      });
-      wishlistItemInput.value = '';
+      const name = newWishlistInput.value.trim();
+      if (!name) return;
+      await addDoc(WISHLISTS, { name });
+      newWishlistInput.value = '';
     });
 
-    const wishlistQuery = query(WISHLIST, orderBy('timestamp', 'asc'));
-    onSnapshot(wishlistQuery, snapshot => {
-      wishlistList.innerHTML = '';
+    onSnapshot(WISHLISTS, snapshot => {
+      wishlistsContainer.innerHTML = '';
       snapshot.docs.forEach(docSnap => {
-        const data = docSnap.data();
-        const li = document.createElement('li');
-
-        const span = document.createElement('span');
-        span.textContent = data.text;
-        span.classList.add('item-text');
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Elimina';
-        delBtn.classList.add('delete-button');
-        delBtn.addEventListener('click', async () => {
-          await deleteDoc(doc(db, 'wishlistItems', docSnap.id));
-        });
-
-        li.appendChild(span);
-        li.appendChild(delBtn);
-        wishlistList.appendChild(li);
+        const wlObj = { id: docSnap.id, name: docSnap.data().name };
+        renderWishlist(wlObj);
       });
     });
+
+    function renderWishlist(wlObj) {
+      const card = document.createElement('div');
+      card.classList.add('wishlist-card');
+      card.setAttribute('data-wl-id', wlObj.id);
+
+      // Header modificabile nome wishlist
+      const header = document.createElement('h3');
+      const headerSpan = document.createElement('span');
+      headerSpan.textContent = wlObj.name;
+      header.appendChild(headerSpan);
+      card.appendChild(header);
+
+      function enableHeaderEdit() {
+        const oldName = headerSpan.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = oldName;
+        inputEdit.classList.add('item-label-edit');
+        header.replaceChild(inputEdit, headerSpan);
+        inputEdit.focus();
+
+        async function saveHeaderEdit() {
+          const newName = inputEdit.value.trim();
+          if (newName && newName !== oldName) {
+            await updateDoc(doc(db, 'wishlists', wlObj.id), { name: newName });
+          }
+          headerSpan.textContent = newName || oldName;
+          header.replaceChild(headerSpan, inputEdit);
+        }
+        inputEdit.addEventListener('blur', saveHeaderEdit);
+        inputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveHeaderEdit();
+          } else if (e.key === 'Escape') {
+            header.replaceChild(headerSpan, inputEdit);
+          }
+        });
+      }
+      headerSpan.addEventListener('dblclick', enableHeaderEdit);
+      headerSpan.addEventListener('touchend', e => {
+        e.preventDefault();
+        enableHeaderEdit();
+      });
+
+      // Form per aggiungere item
+      const itemForm = document.createElement('form');
+      itemForm.classList.add('item-form');
+      itemForm.setAttribute('data-wl-id', wlObj.id);
+
+      const itemInput = document.createElement('input');
+      itemInput.type = 'text';
+      itemInput.placeholder = 'Nuovo elemento...';
+      itemInput.required = true;
+
+      const addItemBtn = document.createElement('button');
+      addItemBtn.textContent = 'Aggiungi';
+
+      itemForm.appendChild(itemInput);
+      itemForm.appendChild(addItemBtn);
+      card.appendChild(itemForm);
+
+      // Sezione lista items
+      const listSection = document.createElement('div');
+      listSection.classList.add('list-section');
+      const listHeader = document.createElement('h4');
+      listHeader.textContent = 'Elementi';
+      const itemUl = document.createElement('ul');
+      itemUl.classList.add('item-list');
+      listSection.appendChild(listHeader);
+      listSection.appendChild(itemUl);
+      card.appendChild(listSection);
+
+      // Elimina wishlist
+      const deleteWlBtn = document.createElement('button');
+      deleteWlBtn.classList.add('delete-wishlist-button');
+      deleteWlBtn.textContent = 'Elimina Wishlist';
+      deleteWlBtn.addEventListener('click', async () => {
+        if (confirm(`Eliminare la wishlist “${wlObj.name}”?`)) {
+          // Elimina tutti gli items
+          const itemsCol = collection(db, 'wishlists', wlObj.id, 'items');
+          const snapshot = await getDocs(itemsCol);
+          const deletes = snapshot.docs.map(d => deleteDoc(doc(db, 'wishlists', wlObj.id, 'items', d.id)));
+          await Promise.all(deletes);
+          // Elimina la wishlist
+          await deleteDoc(doc(db, 'wishlists', wlObj.id));
+        }
+      });
+      card.appendChild(deleteWlBtn);
+
+      wishlistsContainer.appendChild(card);
+
+      // Submit item
+      itemForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const text = itemInput.value.trim();
+        if (!text) return;
+        await addDoc(collection(db, 'wishlists', wlObj.id, 'items'), {
+          text,
+          timestamp: serverTimestamp()
+        });
+        itemInput.value = '';
+      });
+
+      // Ascolta items
+      const itemsQuery = query(collection(db, 'wishlists', wlObj.id, 'items'), orderBy('timestamp', 'asc'));
+      onSnapshot(itemsQuery, snapshot => {
+        itemUl.innerHTML = '';
+        snapshot.docs.forEach(itemSnap => {
+          const li = document.createElement('li');
+          li.setAttribute('data-item-id', itemSnap.id);
+
+          const label = document.createElement('span');
+          label.textContent = itemSnap.data().text;
+          label.classList.add('item-label');
+
+          function startItemEdit() {
+            const old = label.textContent;
+            const inputEdit = document.createElement('input');
+            inputEdit.type = 'text';
+            inputEdit.value = old;
+            inputEdit.classList.add('item-label-edit');
+            li.replaceChild(inputEdit, label);
+            inputEdit.focus();
+
+            async function saveEdit() {
+              const newText = inputEdit.value.trim();
+              if (newText && newText !== old) {
+                await updateDoc(doc(db, 'wishlists', wlObj.id, 'items', itemSnap.id), { text: newText });
+              }
+              label.textContent = newText || old;
+              li.replaceChild(label, inputEdit);
+            }
+
+            inputEdit.addEventListener('blur', saveEdit);
+            inputEdit.addEventListener('keydown', e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                saveEdit();
+              } else if (e.key === 'Escape') {
+                li.replaceChild(label, inputEdit);
+              }
+            });
+          }
+          label.addEventListener('dblclick', startItemEdit);
+          label.addEventListener('touchend', e => {
+            e.preventDefault();
+            startItemEdit();
+          });
+
+          const delBtn = document.createElement('button');
+          delBtn.textContent = 'Elimina';
+          delBtn.classList.add('delete-item-button');
+          delBtn.addEventListener('click', async () => {
+            await deleteDoc(doc(db, 'wishlists', wlObj.id, 'items', itemSnap.id));
+          });
+
+          li.appendChild(label);
+          li.appendChild(delBtn);
+          itemUl.appendChild(li);
+        });
+      });
+    }
 
     // ==========================
     // COMPARATORE PREZZI CONDIVISO (Firestore)
@@ -1377,7 +1590,6 @@
 
         // First cell: store name
         const tdName = document.createElement('td');
-        tdName.setAttribute('data-label', 'Supermercato');
         tdName.style.display = 'flex';
         tdName.style.alignItems = 'center';
         tdName.style.justifyContent = 'space-between';
@@ -1424,11 +1636,11 @@
           startStoreEdit();
         });
 
-        const deleteBtn = document.createElement('button');
-        deleteBtn.textContent = '✕';
-        deleteBtn.classList.add('delete-button');
-        deleteBtn.title = 'Rimuovi supermercato';
-        deleteBtn.addEventListener('click', async () => {
+        const deleteBtn2 = document.createElement('button');
+        deleteBtn2.textContent = '✕';
+        deleteBtn2.classList.add('delete-button');
+        deleteBtn2.title = 'Rimuovi supermercato';
+        deleteBtn2.addEventListener('click', async () => {
           const docSnap = await getDoc(COMP_DOC);
           const data = docSnap.data();
           const newStores = data.stores.filter((_, idx) => idx !== rowIdx);
@@ -1436,13 +1648,12 @@
         });
 
         tdName.appendChild(nameSpan);
-        tdName.appendChild(deleteBtn);
+        tdName.appendChild(deleteBtn2);
         tr.appendChild(tdName);
 
         // Price cells
         products.forEach((prod, colIdx) => {
           const td = document.createElement('td');
-          td.setAttribute('data-label', prod);
           const input = document.createElement('input');
           input.type = 'text';
           input.placeholder = '€';
