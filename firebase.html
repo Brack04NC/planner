@@ -3,17 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Wishlist Condivisa</title>
+  <title>MyPlanner Condiviso (Firestore)</title>
   <style>
     :root {
-      --bg-light: #f9f9f9;
+      --bg-light: #f0f2f5;
       --text-light: #333;
       --card-light: #fff;
       --border-light: #ddd;
+      --header-bg-light: #e7eaff;
+
       --bg-dark: #1e1e1e;
       --text-dark: #e0e0e0;
       --card-dark: #2c2c2c;
       --border-dark: #444;
+      --header-bg-dark: #3a3a3a;
     }
     body {
       margin: 0;
@@ -27,49 +30,103 @@
       background-color: var(--bg-dark);
       color: var(--text-dark);
     }
-    .container {
-      max-width: 600px;
-      margin: 40px auto;
-      padding: 0 20px;
+    header {
+      background-color: var(--card-light);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      transition: background-color 0.3s;
     }
-    h1 {
-      text-align: center;
-      margin-bottom: 20px;
+    body.dark header {
+      background-color: var(--card-dark);
+    }
+    nav {
+      max-width: 900px;
+      margin: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+    }
+    .logo {
+      font-size: 1.5rem;
+      font-weight: bold;
+      color: #007bff;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+    }
+    .nav-link {
+      padding: 8px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s, color 0.2s;
+      font-size: 1rem;
+    }
+    .nav-link.active {
+      background-color: #e0e7ff;
+      color: #007bff;
+    }
+    body.dark .nav-link.active {
+      background-color: #444;
+      color: #66aaff;
     }
     .theme-toggle {
-      position: absolute;
-      top: 10px;
-      right: 10px;
       cursor: pointer;
       padding: 6px 12px;
-      background-color: #007bff;
+      background-color: #333;
       color: #fff;
       border: none;
       border-radius: 4px;
       transition: background-color 0.2s;
     }
     .theme-toggle:hover {
-      background-color: #0056b3;
+      background-color: #555;
     }
-    .wishlist-card {
+    body.dark .theme-toggle {
+      background-color: #ddd;
+      color: #000;
+    }
+    .container {
+      max-width: 900px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    h2 {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .page {
+      display: none;
       background-color: var(--card-light);
-      border: 1px solid var(--border-light);
       border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
       padding: 20px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-      transition: background-color 0.3s, border-color 0.3s;
+      margin-bottom: 40px;
+      transition: background-color 0.3s, color 0.3s;
     }
-    body.dark .wishlist-card {
+    body.dark .page {
       background-color: var(--card-dark);
-      border-color: var(--border-dark);
+      color: var(--text-dark);
     }
-    .new-item-form {
+    .page.active {
+      display: block;
+    }
+
+    /* ==========================
+       To-Do List Styles
+    =========================== */
+    #todo-page .new-list-form {
       display: flex;
       gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
       margin-bottom: 20px;
     }
-    .new-item-form input[type="text"] {
-      flex: 1;
+    #todo-page .new-list-form input[type="text"] {
+      flex: 1 1 200px;
       padding: 8px;
       font-size: 14px;
       border: 1px solid var(--border-light);
@@ -78,43 +135,423 @@
       color: inherit;
       transition: border-color 0.3s;
     }
-    body.dark .new-item-form input {
+    body.dark #todo-page .new-list-form input {
       border-color: var(--border-dark);
     }
-    .new-item-form button {
+    #todo-page .new-list-form button {
       padding: 8px 16px;
-      background-color: #28a745;
-      color: #fff;
       font-size: 14px;
+      background-color: #007bff;
+      color: #fff;
       border: none;
       border-radius: 4px;
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    .new-item-form button:hover {
+    #todo-page .new-list-form button:hover {
+      background-color: #0056b3;
+    }
+    #todo-page #lists-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    #todo-page .todo-list-card {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 15px;
+      transition: border-color 0.3s;
+    }
+    body.dark #todo-page .todo-list-card {
+      border-color: var(--border-dark);
+    }
+    #todo-page .todo-list-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      text-align: center;
+      cursor: pointer;
+    }
+    #todo-page .task-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    #todo-page .task-form input[type="text"],
+    #todo-page .task-form input[name="description"] {
+      flex: 1 1 120px;
+      padding: 6px;
+      font-size: 13px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #todo-page .task-form input {
+      border-color: var(--border-dark);
+    }
+    #todo-page .task-form button {
+      padding: 6px 12px;
+      font-size: 13px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #todo-page .task-form button:hover {
       background-color: #218838;
     }
-    ul {
+    #todo-page .list-section {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 10px;
+    }
+    #todo-page .list-section h4 {
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 4px;
+    }
+    body.dark #todo-page .list-section h4 {
+      border-color: var(--border-dark);
+    }
+    #todo-page .task-items {
       list-style: none;
-      padding: 0;
+      padding-left: 0;
+      margin: 0;
+      flex: 1;
+      overflow-y: auto;
+    }
+    #todo-page .task-items li {
+      display: flex;
+      flex-direction: column;
+      padding: 6px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+    body.dark #todo-page .task-items li {
+      border-color: var(--border-dark);
+    }
+    #todo-page .task-items li:last-child {
+      border-bottom: none;
+    }
+    #todo-page .task-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #todo-page .task-label,
+    #todo-page .task-label-edit {
+      flex: 1;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #todo-page .task-desc,
+    #todo-page .task-desc-edit {
+      margin-left: 24px;
+      font-size: 12px;
+      color: gray;
+      cursor: pointer;
+    }
+    #todo-page .task-label-edit,
+    #todo-page .task-desc-edit {
+      border: 1px solid var(--border-light);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 14px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #todo-page .task-label-edit,
+    body.dark #todo-page .task-desc-edit {
+      border-color: var(--border-dark);
+    }
+    #todo-page .done .task-label {
+      text-decoration: line-through;
+      color: #888;
+    }
+    #todo-page .delete-list-button {
+      margin-top: 10px;
+      padding: 6px;
+      font-size: 12px;
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      align-self: center;
+      transition: background-color 0.2s;
+    }
+    #todo-page .delete-list-button:hover {
+      background-color: #c82333;
+    }
+
+    /* ==========================
+       Lista della Spesa Styles
+    =========================== */
+    #shopping-page .new-item-form {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      justify-content: center;
+    }
+    #shopping-page .new-item-form input[type="text"],
+    #shopping-page .new-item-form input[name="description"] {
+      flex: 1 1 150px;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #shopping-page .new-item-form input {
+      border-color: var(--border-dark);
+    }
+    #shopping-page .new-item-form button {
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #shopping-page .new-item-form button:hover {
+      background-color: #218838;
+    }
+    #shopping-page .list-section {
+      margin-bottom: 20px;
+    }
+    #shopping-page .list-section h4 {
+      margin-bottom: 10px;
+      font-size: 0.95rem;
+      border-bottom: 2px solid var(--border-light);
+      padding-bottom: 5px;
+    }
+    body.dark #shopping-page .list-section h4 {
+      border-color: var(--border-dark);
+    }
+    #shopping-page ul {
+      list-style: none;
+      padding-left: 0;
       margin: 0;
     }
-    li {
+    #shopping-page li {
+      display: flex;
+      flex-direction: column;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border-light);
+    }
+    body.dark #shopping-page li {
+      border-color: var(--border-dark);
+    }
+    #shopping-page li:last-child {
+      border-bottom: none;
+    }
+    #shopping-page .item-content {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #shopping-page .item-info,
+    #shopping-page .item-info-edit {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      flex: 1;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #shopping-page .item-desc,
+    #shopping-page .item-desc-edit {
+      margin-left: 24px;
+      font-size: 12px;
+      color: gray;
+      cursor: pointer;
+    }
+    #shopping-page .item-info-edit input[type="text"],
+    #shopping-page .item-info-edit input[name="description"] {
+      border: 1px solid var(--border-light);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 14px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #shopping-page .item-info-edit input {
+      border-color: var(--border-dark);
+    }
+    #shopping-page .done .item-info {
+      text-decoration: line-through;
+      color: #888;
+    }
+    #shopping-page .delete-item-button {
+      margin-top: 6px;
+      align-self: flex-end;
+      padding: 4px 8px;
+      font-size: 12px;
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+      /* Viene mostrato solo se l'articolo è segnato come comprato */
+    }
+    #shopping-page .delete-item-button:hover {
+      background-color: #c82333;
+    }
+
+    /* ==========================
+       Wishlist (multi) Styles
+    =========================== */
+    #wishlist-page .new-list-form {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-bottom: 20px;
+    }
+    #wishlist-page .new-list-form input[type="text"] {
+      flex: 1 1 200px;
+      padding: 8px;
+      font-size: 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #wishlist-page .new-list-form input {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .new-list-form button {
+      padding: 8px 16px;
+      font-size: 14px;
+      background-color: #007bff;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #wishlist-page .new-list-form button:hover {
+      background-color: #0056b3;
+    }
+    #wishlist-page #wishlists-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+    }
+    #wishlist-page .wishlist-card {
+      display: flex;
+      flex-direction: column;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      padding: 15px;
+      transition: border-color 0.3s;
+    }
+    body.dark #wishlist-page .wishlist-card {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .wishlist-card h3 {
+      font-size: 1.2rem;
+      margin-bottom: 12px;
+      text-align: center;
+      cursor: pointer;
+    }
+    #wishlist-page .item-form {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    #wishlist-page .item-form input[type="text"] {
+      flex: 1 1 150px;
+      padding: 6px;
+      font-size: 13px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #wishlist-page .item-form input {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .item-form button {
+      padding: 6px 12px;
+      font-size: 13px;
+      background-color: #28a745;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    #wishlist-page .item-form button:hover {
+      background-color: #218838;
+    }
+    #wishlist-page .list-section {
+      margin-top: 10px;
+    }
+    #wishlist-page .list-section h4 {
+      margin-bottom: 6px;
+      font-size: 0.95rem;
+      border-bottom: 1px solid var(--border-light);
+      padding-bottom: 4px;
+    }
+    body.dark #wishlist-page .list-section h4 {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .item-list {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+    }
+    #wishlist-page .item-list li {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 10px 0;
+      padding: 6px 0;
       border-bottom: 1px solid var(--border-light);
-      transition: border-color 0.3s;
     }
-    body.dark li {
+    body.dark #wishlist-page .item-list li {
       border-color: var(--border-dark);
     }
-    .item-text {
-      flex: 1;
-      font-size: 16px;
+    #wishlist-page .item-list li:last-child {
+      border-bottom: none;
     }
-    .delete-button {
+    #wishlist-page .item-label,
+    #wishlist-page .item-label-edit {
+      flex: 1;
+      font-size: 14px;
+      cursor: pointer;
+    }
+    #wishlist-page .item-label-edit {
+      border: 1px solid var(--border-light);
+      padding: 2px 4px;
+      border-radius: 4px;
+      font-size: 14px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark #wishlist-page .item-label-edit {
+      border-color: var(--border-dark);
+    }
+    #wishlist-page .delete-item-button {
       background-color: #dc3545;
       color: #fff;
       border: none;
@@ -124,42 +561,268 @@
       cursor: pointer;
       transition: background-color 0.2s;
     }
-    .delete-button:hover {
+    #wishlist-page .delete-item-button:hover {
       background-color: #c82333;
+    }
+    #wishlist-page .delete-wishlist-button {
+      margin-top: 10px;
+      padding: 6px;
+      font-size: 12px;
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      align-self: center;
+      transition: background-color 0.2s;
+    }
+    #wishlist-page .delete-wishlist-button:hover {
+      background-color: #c82333;
+    }
+
+    /* ==========================
+       Comparatore Prezzi Styles
+    =========================== */
+    .comparison-wrapper {
+      overflow-x: auto;
+      margin-top: 10px;
+      border: 1px solid var(--border-light);
+      border-radius: 8px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+    body.dark .comparison-wrapper {
+      border-color: var(--border-dark);
+    }
+    .comparison-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      min-width: 600px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .comparison-table th,
+    .comparison-table td {
+      border: 1px solid var(--border-light);
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 14px;
+      transition: border-color 0.3s, background-color 0.3s;
+    }
+    body.dark .comparison-table th,
+    body.dark .comparison-table td {
+      border-color: var(--border-dark);
+    }
+    .comparison-table th {
+      background-color: var(--header-bg-light);
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      font-weight: bold;
+    }
+    body.dark .comparison-table th {
+      background-color: var(--header-bg-dark);
+    }
+    .comparison-table th span {
+      flex: 1;
+    }
+    .comparison-table th input.edit-input {
+      width: 80%;
+      padding: 4px;
+      font-size: 13px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark .comparison-table th input {
+      border-color: var(--border-dark);
+    }
+    .comparison-table td input[type="text"] {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px;
+      font-size: 14px;
+      border: 1px solid var(--border-light);
+      border-radius: 4px;
+      text-align: center;
+      background-color: inherit;
+      color: inherit;
+      transition: border-color 0.3s;
+    }
+    body.dark .comparison-table td input {
+      border-color: var(--border-dark);
+    }
+    .comparison-table tr:nth-child(even) td {
+      background-color: rgba(0,0,0,0.03);
+    }
+    body.dark .comparison-table tr:nth-child(even) td {
+      background-color: rgba(255,255,255,0.05);
+    }
+    .comparison-table .delete-button {
+      background-color: #dc3545;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      padding: 4px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: background-color 0.2s;
+    }
+    .comparison-table .delete-button:hover {
+      background-color: #c82333;
+    }
+    .comparison-table .lowest-price {
+      background-color: #d4edda; /* verde chiaro */
+    }
+
+    /* Responsive generale */
+    @media (max-width: 600px) {
+      nav {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .nav-links {
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      #todo-page .todo-list-card,
+      #shopping-page li,
+      .wishlist-card,
+      #comparison-page .forms-row {
+        width: 100%;
+      }
+      .comparison-wrapper {
+        margin: 0 -20px;
+        padding: 0 20px;
+      }
     }
   </style>
 </head>
 <body>
-  <button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
+  <header>
+    <nav>
+      <div class="logo">MyPlanner</div>
+      <div class="nav-links">
+        <div class="nav-link active" data-target="todo-page">To-Do</div>
+        <div class="nav-link" data-target="shopping-page">Spesa</div>
+        <div class="nav-link" data-target="wishlist-page">Wishlist</div>
+        <div class="nav-link" data-target="comparison-page">Comparatore</div>
+        <button class="theme-toggle" onclick="toggleTheme()">🌓 Tema</button>
+      </div>
+    </nav>
+  </header>
+
   <div class="container">
-    <div class="wishlist-card">
-      <h1>Wishlist Condivisa</h1>
-      <form id="new-item-form" class="new-item-form">
-        <input type="text" id="item-input" placeholder="Aggiungi un desiderio..." required />
+    <!-- To-Do Page -->
+    <section id="todo-page" class="page active">
+      <h2>Liste di Cose da Fare</h2>
+      <form id="new-list-form" class="new-list-form">
+        <input type="text" id="new-list-input" placeholder="Nome nuova lista..." required>
+        <button type="submit">Crea Lista</button>
+      </form>
+      <div id="lists-container"></div>
+    </section>
+
+    <!-- Shopping Page -->
+    <section id="shopping-page" class="page">
+      <h2>Lista della Spesa</h2>
+      <form id="new-shopping-form" class="new-item-form">
+        <input type="text" id="shop-item-input" placeholder="Nome prodotto..." required>
+        <input type="text" id="shop-qty-input" placeholder="Quantità o peso..." required>
+        <input type="text" id="shop-desc-input" name="description" placeholder="Descrizione (opzionale)...">
         <button type="submit">Aggiungi</button>
       </form>
-      <ul id="wishlist"></ul>
-    </div>
+      <div class="list-section">
+        <h4>Da Comprare</h4>
+        <ul id="shopping-todo-list"></ul>
+      </div>
+      <div class="list-section">
+        <h4>Comprato</h4>
+        <ul id="shopping-done-list"></ul>
+      </div>
+    </section>
+
+    <!-- Wishlist Page -->
+    <section id="wishlist-page" class="page">
+      <h2>Wishlist Multiple</h2>
+      <form id="new-wishlist-form" class="new-list-form">
+        <input type="text" id="new-wishlist-input" placeholder="Nome nuova wishlist..." required>
+        <button type="submit">Crea Wishlist</button>
+      </form>
+      <div id="wishlists-container"></div>
+    </section>
+
+    <!-- Comparison Page -->
+    <section id="comparison-page" class="page">
+      <h2>Comparatore Prezzi</h2>
+      <div class="forms-row">
+        <form id="add-product-form">
+          <label for="product-name-input">Nuovo Prodotto:</label>
+          <input type="text" id="product-name-input" placeholder="Nome prodotto..." required>
+          <button type="submit">Aggiungi Prodotto</button>
+        </form>
+        <form id="add-store-form">
+          <label for="store-name-input">Nuovo Supermercato:</label>
+          <input type="text" id="store-name-input" placeholder="Nome supermercato..." required>
+          <button type="submit">Aggiungi Supermercato</button>
+        </form>
+      </div>
+      <div class="comparison-wrapper">
+        <table id="comparison-table" class="comparison-table">
+          <thead>
+            <tr>
+              <th><span>Supermercato</span></th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
+    import {
+      getFirestore,
+      collection,
+      doc,
+      addDoc,
+      setDoc,
+      updateDoc,
+      deleteDoc,
+      onSnapshot,
+      query,
+      orderBy,
+      serverTimestamp,
+      getDoc,
+      getDocs
+    } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
 
-    // CONFIGURAZIONE FIREBASE
+    // CONFIGURAZIONE FIREBASE (Firestore)
     const firebaseConfig = {
       apiKey: "AIzaSyAx1f5ZGon--RhyWwlKDHHx2PX7znz4Y4c",
       authDomain: "todosite-50224.firebaseapp.com",
       projectId: "todosite-50224",
-      storageBucket: "todosite-50224.firebasestorage.app",
+      storageBucket: "todosite-50224.appspot.com",
       messagingSenderId: "1007826815171",
       appId: "1:1007826815171:web:d350392640ad08c0fbba76",
       measurementId: "G-BT9DJBN90Q"
-      };
-
+    };
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    const WISHLIST = collection(db, 'wishlistItems');
+
+    // NAVIGATION TABS
+    const navLinks = document.querySelectorAll('.nav-link');
+    const pages = document.querySelectorAll('.page');
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        navLinks.forEach(l => l.classList.remove('active'));
+        pages.forEach(p => p.classList.remove('active'));
+        link.classList.add('active');
+        document.getElementById(link.dataset.target).classList.add('active');
+      });
+    });
 
     // THEME TOGGLE
     function setTheme(mode) {
@@ -180,46 +843,889 @@
       if (saved === 'dark') setTheme('dark');
     })();
 
-    // AGGIUNGI NUOVO ITEM
-    const newItemForm = document.getElementById('new-item-form');
-    const itemInput = document.getElementById('item-input');
-    const wishlistUl = document.getElementById('wishlist');
+    // ==========================
+    // TODO LIST MULTI-LIST (Firestore)
+    const TODO_LISTS = collection(db, 'todoLists');
+    const newListForm = document.getElementById('new-list-form');
+    const newListInput = document.getElementById('new-list-input');
+    const listsContainer = document.getElementById('lists-container');
 
-    newItemForm.addEventListener('submit', async e => {
+    newListForm.addEventListener('submit', async e => {
       e.preventDefault();
-      const text = itemInput.value.trim();
-      if (!text) return;
-      await addDoc(WISHLIST, {
+      const name = newListInput.value.trim();
+      if (!name) return;
+      await addDoc(TODO_LISTS, { name });
+      newListInput.value = '';
+    });
+
+    onSnapshot(TODO_LISTS, snapshot => {
+      listsContainer.innerHTML = '';
+      snapshot.docs.forEach(docSnap => {
+        const listObj = { id: docSnap.id, name: docSnap.data().name };
+        renderTodoList(listObj);
+      });
+    });
+
+    function renderTodoList(listObj) {
+      const card = document.createElement('div');
+      card.classList.add('todo-list-card');
+      card.setAttribute('data-list-id', listObj.id);
+
+      // Header modificabile
+      const header = document.createElement('h3');
+      const headerSpan = document.createElement('span');
+      headerSpan.textContent = listObj.name;
+      header.appendChild(headerSpan);
+      card.appendChild(header);
+
+      function enableHeaderEdit() {
+        const oldName = headerSpan.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = oldName;
+        inputEdit.classList.add('task-label-edit');
+        header.replaceChild(inputEdit, headerSpan);
+        inputEdit.focus();
+
+        async function saveHeaderEdit() {
+          const newName = inputEdit.value.trim();
+          if (newName && newName !== oldName) {
+            await updateDoc(doc(db, 'todoLists', listObj.id), { name: newName });
+          }
+          headerSpan.textContent = newName || oldName;
+          header.replaceChild(headerSpan, inputEdit);
+        }
+        inputEdit.addEventListener('blur', saveHeaderEdit);
+        inputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveHeaderEdit();
+          } else if (e.key === 'Escape') {
+            header.replaceChild(headerSpan, inputEdit);
+          }
+        });
+      }
+      headerSpan.addEventListener('dblclick', enableHeaderEdit);
+      headerSpan.addEventListener('touchend', e => {
+        e.preventDefault();
+        enableHeaderEdit();
+      });
+
+      // Form per aggiungere task
+      const taskForm = document.createElement('form');
+      taskForm.classList.add('task-form');
+      taskForm.setAttribute('data-list-id', listObj.id);
+
+      const taskInput = document.createElement('input');
+      taskInput.type = 'text';
+      taskInput.placeholder = 'Nuova attività...';
+      taskInput.required = true;
+
+      const descInput = document.createElement('input');
+      descInput.type = 'text';
+      descInput.name = 'description';
+      descInput.placeholder = 'Descrizione (opzionale)...';
+
+      const addTaskBtn = document.createElement('button');
+      addTaskBtn.textContent = 'Aggiungi';
+
+      taskForm.appendChild(taskInput);
+      taskForm.appendChild(descInput);
+      taskForm.appendChild(addTaskBtn);
+      card.appendChild(taskForm);
+
+      // Sezioni DA FARE e FATTO
+      const todoSection = document.createElement('div');
+      todoSection.classList.add('list-section');
+      const todoHeader = document.createElement('h4');
+      todoHeader.textContent = 'DA FARE';
+      const todoUl = document.createElement('ul');
+      todoUl.classList.add('task-items');
+      todoUl.setAttribute('data-type', 'todo');
+      todoSection.appendChild(todoHeader);
+      todoSection.appendChild(todoUl);
+      card.appendChild(todoSection);
+
+      const doneSection = document.createElement('div');
+      doneSection.classList.add('list-section');
+      const doneHeader = document.createElement('h4');
+      doneHeader.textContent = 'FATTO';
+      const doneUl = document.createElement('ul');
+      doneUl.classList.add('task-items');
+      doneUl.setAttribute('data-type', 'done');
+      doneSection.appendChild(doneHeader);
+      doneSection.appendChild(doneUl);
+      card.appendChild(doneSection);
+
+      // Elimina lista e relativi task
+      const deleteListBtn = document.createElement('button');
+      deleteListBtn.classList.add('delete-list-button');
+      deleteListBtn.textContent = 'Elimina Lista';
+      deleteListBtn.addEventListener('click', async () => {
+        if (confirm(`Eliminare la lista “${listObj.name}”?`)) {
+          const tasksCol = collection(db, 'todoLists', listObj.id, 'tasks');
+          const snapshot = await getDocs(tasksCol);
+          const deletes = snapshot.docs.map(d => deleteDoc(doc(db, 'todoLists', listObj.id, 'tasks', d.id)));
+          await Promise.all(deletes);
+          await deleteDoc(doc(db, 'todoLists', listObj.id));
+        }
+      });
+      card.appendChild(deleteListBtn);
+
+      listsContainer.appendChild(card);
+
+      taskForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const text = taskInput.value.trim();
+        const desc = descInput.value.trim();
+        if (!text) return;
+        await addDoc(collection(db, 'todoLists', listObj.id, 'tasks'), {
+          text,
+          desc,
+          done: false,
+          timestamp: serverTimestamp()
+        });
+        taskInput.value = '';
+        descInput.value = '';
+      });
+
+      const tasksQuery = query(collection(db, 'todoLists', listObj.id, 'tasks'), orderBy('timestamp', 'asc'));
+      onSnapshot(tasksQuery, snapshot => {
+        todoUl.innerHTML = '';
+        doneUl.innerHTML = '';
+        snapshot.docs.forEach(taskSnap => {
+          const tdata = taskSnap.data();
+          const li = createTaskElement(taskSnap.id, tdata.text, tdata.desc, tdata.done, listObj.id);
+          if (tdata.done) {
+            doneUl.appendChild(li);
+          } else {
+            todoUl.appendChild(li);
+          }
+        });
+      });
+    }
+
+    function createTaskElement(taskId, text, desc, done, listId) {
+      const li = document.createElement('li');
+
+      const topRow = document.createElement('div');
+      topRow.classList.add('task-content');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = done;
+
+      const label = document.createElement('span');
+      label.textContent = text;
+      label.classList.add('task-label');
+
+      topRow.appendChild(checkbox);
+      topRow.appendChild(label);
+      li.appendChild(topRow);
+
+      if (desc) {
+        const descSpan = document.createElement('span');
+        descSpan.textContent = desc;
+        descSpan.classList.add('task-desc');
+        li.appendChild(descSpan);
+      }
+
+      // Toggle done
+      checkbox.addEventListener('change', async () => {
+        await updateDoc(doc(db, 'todoLists', listId, 'tasks', taskId), { done: checkbox.checked });
+      });
+
+      // Modifica testo
+      function startTextEdit() {
+        const old = label.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = old;
+        inputEdit.classList.add('task-label-edit');
+
+        topRow.replaceChild(inputEdit, label);
+        inputEdit.focus();
+
+        async function saveEdit() {
+          const newText = inputEdit.value.trim();
+          if (newText && newText !== old) {
+            await updateDoc(doc(db, 'todoLists', listId, 'tasks', taskId), { text: newText });
+          }
+          label.textContent = newText || old;
+          topRow.replaceChild(label, inputEdit);
+        }
+
+        inputEdit.addEventListener('blur', saveEdit);
+        inputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveEdit();
+          } else if (e.key === 'Escape') {
+            topRow.replaceChild(label, inputEdit);
+          }
+        });
+      }
+      label.addEventListener('dblclick', startTextEdit);
+      label.addEventListener('touchend', e => {
+        e.preventDefault();
+        startTextEdit();
+      });
+
+      // Modifica descrizione
+      const descSpan = li.querySelector('.task-desc');
+      if (descSpan) {
+        function startDescEdit() {
+          const old = descSpan.textContent;
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = old;
+          inputEdit.classList.add('task-desc-edit');
+          li.replaceChild(inputEdit, descSpan);
+          inputEdit.focus();
+
+          async function saveEdit() {
+            const newDesc = inputEdit.value.trim();
+            await updateDoc(doc(db, 'todoLists', listId, 'tasks', taskId), { desc: newDesc });
+            descSpan.textContent = newDesc;
+            li.replaceChild(descSpan, inputEdit);
+          }
+
+          inputEdit.addEventListener('blur', saveEdit);
+          inputEdit.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              saveEdit();
+            } else if (e.key === 'Escape') {
+              li.replaceChild(descSpan, inputEdit);
+            }
+          });
+        }
+        descSpan.addEventListener('dblclick', startDescEdit);
+        descSpan.addEventListener('touchend', e => {
+          e.preventDefault();
+          startDescEdit();
+        });
+      }
+
+      // Elimina task (visibile solo se l'articolo è segnato come comprato)
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '✕';
+      delBtn.classList.add('delete-list-button');
+      delBtn.style.fontSize = '12px';
+      delBtn.style.padding = '4px';
+      delBtn.style.marginTop = '6px';
+      // Mostra solo se done === true
+      if (!done) {
+        delBtn.style.display = 'none';
+      }
+      delBtn.addEventListener('click', async () => {
+        await deleteDoc(doc(db, 'todoLists', listId, 'tasks', taskId));
+      });
+      li.appendChild(delBtn);
+
+      return li;
+    }
+
+    // ==========================
+    // SHOPPING LIST CONDIVISA (Firestore)
+    const SHOPPING = collection(db, 'shoppingItems');
+    const newShoppingForm = document.getElementById('new-shopping-form');
+    const shopItemInput = document.getElementById('shop-item-input');
+    const shopQtyInput = document.getElementById('shop-qty-input');
+    const shopDescInput = document.getElementById('shop-desc-input');
+    const shoppingTodoList = document.getElementById('shopping-todo-list');
+    const shoppingDoneList = document.getElementById('shopping-done-list');
+
+    newShoppingForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const text = shopItemInput.value.trim();
+      const qty = shopQtyInput.value.trim();
+      const desc = shopDescInput.value.trim();
+      if (!text || !qty) return;
+      await addDoc(SHOPPING, {
         text,
+        qty,
+        desc,
+        done: false,
         timestamp: serverTimestamp()
       });
-      itemInput.value = '';
+      shopItemInput.value = '';
+      shopQtyInput.value = '';
+      shopDescInput.value = '';
     });
 
-    // RENDER LISTA IN TEMPO REALE
-    const q = query(WISHLIST, orderBy('timestamp', 'asc'));
-    onSnapshot(q, snapshot => {
-      wishlistUl.innerHTML = '';
-      snapshot.forEach(docSnap => {
+    const shopQuery = query(SHOPPING, orderBy('timestamp', 'asc'));
+    onSnapshot(shopQuery, snapshot => {
+      shoppingTodoList.innerHTML = '';
+      shoppingDoneList.innerHTML = '';
+      snapshot.docs.forEach(docSnap => {
         const data = docSnap.data();
-        const li = document.createElement('li');
-
-        const span = document.createElement('span');
-        span.textContent = data.text;
-        span.classList.add('item-text');
-
-        const delBtn = document.createElement('button');
-        delBtn.textContent = 'Elimina';
-        delBtn.classList.add('delete-button');
-        delBtn.addEventListener('click', async () => {
-          await deleteDoc(doc(db, 'wishlistItems', docSnap.id));
-        });
-
-        li.appendChild(span);
-        li.appendChild(delBtn);
-        wishlistUl.appendChild(li);
+        const li = createShoppingItem(docSnap.id, data.text, data.qty, data.desc, data.done);
+        if (data.done) {
+          shoppingDoneList.appendChild(li);
+        } else {
+          shoppingTodoList.appendChild(li);
+        }
       });
     });
+
+    function createShoppingItem(id, text, qty, desc, done) {
+      const li = document.createElement('li');
+
+      const topRow = document.createElement('div');
+      topRow.classList.add('item-content');
+
+      const checkbox = document.createElement('input');
+      checkbox.type = 'checkbox';
+      checkbox.checked = done;
+
+      const infoDiv = document.createElement('div');
+      infoDiv.classList.add('item-info');
+      infoDiv.textContent = text;
+
+      const qtySpan = document.createElement('span');
+      qtySpan.textContent = qty;
+      infoDiv.appendChild(qtySpan);
+
+      topRow.appendChild(checkbox);
+      topRow.appendChild(infoDiv);
+      li.appendChild(topRow);
+
+      if (desc) {
+        const descSpan = document.createElement('span');
+        descSpan.textContent = desc;
+        descSpan.classList.add('item-desc');
+        li.appendChild(descSpan);
+      }
+
+      // Toggle done
+      checkbox.addEventListener('change', async () => {
+        await updateDoc(doc(db, 'shoppingItems', id), { done: checkbox.checked });
+      });
+
+      // Modifica nome/quantità
+      function startItemTextEdit() {
+        const oldName = infoDiv.textContent.split('\n')[0];
+        const oldQty = qty;
+        const editDiv = document.createElement('div');
+        editDiv.classList.add('item-info-edit');
+
+        const nameInputEdit = document.createElement('input');
+        nameInputEdit.type = 'text';
+        nameInputEdit.value = oldName;
+
+        const qtyInputEdit = document.createElement('input');
+        qtyInputEdit.type = 'text';
+        qtyInputEdit.value = oldQty;
+
+        editDiv.appendChild(nameInputEdit);
+        editDiv.appendChild(qtyInputEdit);
+
+        li.replaceChild(editDiv, infoDiv);
+        nameInputEdit.focus();
+
+        async function saveEdit() {
+          const newName = nameInputEdit.value.trim();
+          const newQty = qtyInputEdit.value.trim();
+          if (newName && newQty) {
+            await updateDoc(doc(db, 'shoppingItems', id), { text: newName, qty: newQty });
+          }
+          li.replaceChild(infoDiv, editDiv);
+        }
+
+        nameInputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            saveEdit();
+          } else if (e.key === 'Escape') {
+            li.replaceChild(infoDiv, editDiv);
+          }
+        });
+        qtyInputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            saveEdit();
+          } else if (e.key === 'Escape') {
+            li.replaceChild(infoDiv, editDiv);
+          }
+        });
+        nameInputEdit.addEventListener('blur', saveEdit);
+        qtyInputEdit.addEventListener('blur', saveEdit);
+      }
+      infoDiv.addEventListener('dblclick', startItemTextEdit);
+      infoDiv.addEventListener('touchend', e => {
+        e.preventDefault();
+        startItemTextEdit();
+      });
+
+      // Modifica descrizione
+      const descSpan = li.querySelector('.item-desc');
+      if (descSpan) {
+        function startItemDescEdit() {
+          const old = descSpan.textContent;
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = old;
+          inputEdit.classList.add('item-desc-edit');
+          li.replaceChild(inputEdit, descSpan);
+          inputEdit.focus();
+
+          async function saveEdit() {
+            const newDesc = inputEdit.value.trim();
+            await updateDoc(doc(db, 'shoppingItems', id), { desc: newDesc });
+            descSpan.textContent = newDesc;
+            li.replaceChild(descSpan, inputEdit);
+          }
+
+          inputEdit.addEventListener('keydown', e => {
+            if (e.key === 'Enter') {
+              saveEdit();
+            } else if (e.key === 'Escape') {
+              li.replaceChild(descSpan, inputEdit);
+            }
+          });
+          inputEdit.addEventListener('blur', saveEdit);
+        }
+
+        descSpan.addEventListener('dblclick', startItemDescEdit);
+        descSpan.addEventListener('touchend', e => {
+          e.preventDefault();
+          startItemDescEdit();
+        });
+      }
+
+      // Elimina prodotto (visibile solo se done === true)
+      const deleteBtn = document.createElement('button');
+      deleteBtn.textContent = 'Elimina';
+      deleteBtn.classList.add('delete-item-button');
+      deleteBtn.style.display = done ? 'block' : 'none';
+      deleteBtn.addEventListener('click', async () => {
+        await deleteDoc(doc(db, 'shoppingItems', id));
+      });
+      li.appendChild(deleteBtn);
+
+      return li;
+    }
+
+    // ==========================
+    // WISHLIST MULTIPLE (Firestore)
+    const WISHLISTS = collection(db, 'wishlists');
+    const newWishlistForm2 = document.getElementById('new-wishlist-form');
+    const newWishlistInput = document.getElementById('new-wishlist-input');
+    const wishlistsContainer = document.getElementById('wishlists-container');
+
+    newWishlistForm2.addEventListener('submit', async e => {
+      e.preventDefault();
+      const name = newWishlistInput.value.trim();
+      if (!name) return;
+      await addDoc(WISHLISTS, { name });
+      newWishlistInput.value = '';
+    });
+
+    onSnapshot(WISHLISTS, snapshot => {
+      wishlistsContainer.innerHTML = '';
+      snapshot.docs.forEach(docSnap => {
+        const wlObj = { id: docSnap.id, name: docSnap.data().name };
+        renderWishlist(wlObj);
+      });
+    });
+
+    function renderWishlist(wlObj) {
+      const card = document.createElement('div');
+      card.classList.add('wishlist-card');
+      card.setAttribute('data-wl-id', wlObj.id);
+
+      // Header modificabile nome wishlist
+      const header = document.createElement('h3');
+      const headerSpan = document.createElement('span');
+      headerSpan.textContent = wlObj.name;
+      header.appendChild(headerSpan);
+      card.appendChild(header);
+
+      function enableHeaderEdit() {
+        const oldName = headerSpan.textContent;
+        const inputEdit = document.createElement('input');
+        inputEdit.type = 'text';
+        inputEdit.value = oldName;
+        inputEdit.classList.add('item-label-edit');
+        header.replaceChild(inputEdit, headerSpan);
+        inputEdit.focus();
+
+        async function saveHeaderEdit() {
+          const newName = inputEdit.value.trim();
+          if (newName && newName !== oldName) {
+            await updateDoc(doc(db, 'wishlists', wlObj.id), { name: newName });
+          }
+          headerSpan.textContent = newName || oldName;
+          header.replaceChild(headerSpan, inputEdit);
+        }
+        inputEdit.addEventListener('blur', saveHeaderEdit);
+        inputEdit.addEventListener('keydown', e => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            saveHeaderEdit();
+          } else if (e.key === 'Escape') {
+            header.replaceChild(headerSpan, inputEdit);
+          }
+        });
+      }
+      headerSpan.addEventListener('dblclick', enableHeaderEdit);
+      headerSpan.addEventListener('touchend', e => {
+        e.preventDefault();
+        enableHeaderEdit();
+      });
+
+      // Form per aggiungere item
+      const itemForm = document.createElement('form');
+      itemForm.classList.add('item-form');
+      itemForm.setAttribute('data-wl-id', wlObj.id);
+
+      const itemInput = document.createElement('input');
+      itemInput.type = 'text';
+      itemInput.placeholder = 'Nuovo elemento...';
+      itemInput.required = true;
+
+      const addItemBtn = document.createElement('button');
+      addItemBtn.textContent = 'Aggiungi';
+
+      itemForm.appendChild(itemInput);
+      itemForm.appendChild(addItemBtn);
+      card.appendChild(itemForm);
+
+      // Sezione lista items
+      const listSection = document.createElement('div');
+      listSection.classList.add('list-section');
+      const listHeader = document.createElement('h4');
+      listHeader.textContent = 'Elementi';
+      const itemUl = document.createElement('ul');
+      itemUl.classList.add('item-list');
+      listSection.appendChild(listHeader);
+      listSection.appendChild(itemUl);
+      card.appendChild(listSection);
+
+      // Elimina wishlist
+      const deleteWlBtn = document.createElement('button');
+      deleteWlBtn.classList.add('delete-wishlist-button');
+      deleteWlBtn.textContent = 'Elimina Wishlist';
+      deleteWlBtn.addEventListener('click', async () => {
+        if (confirm(`Eliminare la wishlist “${wlObj.name}”?`)) {
+          const itemsCol = collection(db, 'wishlists', wlObj.id, 'items');
+          const snapshot = await getDocs(itemsCol);
+          const deletes = snapshot.docs.map(d => deleteDoc(doc(db, 'wishlists', wlObj.id, 'items', d.id)));
+          await Promise.all(deletes);
+          await deleteDoc(doc(db, 'wishlists', wlObj.id));
+        }
+      });
+      card.appendChild(deleteWlBtn);
+
+      wishlistsContainer.appendChild(card);
+
+      // Submit item
+      itemForm.addEventListener('submit', async e => {
+        e.preventDefault();
+        const text = itemInput.value.trim();
+        if (!text) return;
+        await addDoc(collection(db, 'wishlists', wlObj.id, 'items'), {
+          text,
+          timestamp: serverTimestamp()
+        });
+        itemInput.value = '';
+      });
+
+      // Ascolta items
+      const itemsQuery = query(collection(db, 'wishlists', wlObj.id, 'items'), orderBy('timestamp', 'asc'));
+      onSnapshot(itemsQuery, snapshot => {
+        itemUl.innerHTML = '';
+        snapshot.docs.forEach(itemSnap => {
+          const li = document.createElement('li');
+          li.setAttribute('data-item-id', itemSnap.id);
+
+          const label = document.createElement('span');
+          label.textContent = itemSnap.data().text;
+          label.classList.add('item-label');
+
+          function startItemEdit() {
+            const old = label.textContent;
+            const inputEdit = document.createElement('input');
+            inputEdit.type = 'text';
+            inputEdit.value = old;
+            inputEdit.classList.add('item-label-edit');
+            li.replaceChild(inputEdit, label);
+            inputEdit.focus();
+
+            async function saveEdit() {
+              const newText = inputEdit.value.trim();
+              if (newText && newText !== old) {
+                await updateDoc(doc(db, 'wishlists', wlObj.id, 'items', itemSnap.id), { text: newText });
+              }
+              label.textContent = newText || old;
+              li.replaceChild(label, inputEdit);
+            }
+
+            inputEdit.addEventListener('blur', saveEdit);
+            inputEdit.addEventListener('keydown', e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                saveEdit();
+              } else if (e.key === 'Escape') {
+                li.replaceChild(label, inputEdit);
+              }
+            });
+          }
+          label.addEventListener('dblclick', startItemEdit);
+          label.addEventListener('touchend', e => {
+            e.preventDefault();
+            startItemEdit();
+          });
+
+          const delBtn = document.createElement('button');
+          delBtn.textContent = 'Elimina';
+          delBtn.classList.add('delete-item-button');
+          delBtn.addEventListener('click', async () => {
+            await deleteDoc(doc(db, 'wishlists', wlObj.id, 'items', itemSnap.id));
+          });
+
+          li.appendChild(label);
+          li.appendChild(delBtn);
+          itemUl.appendChild(li);
+        });
+      });
+    }
+
+    // ==========================
+    // COMPARATORE PREZZI CONDIVISO (Firestore)
+    const COMP_DOC = doc(db, 'comparisonData', 'default');
+    const addProductForm = document.getElementById('add-product-form');
+    const productNameInput = document.getElementById('product-name-input');
+    const addStoreForm = document.getElementById('add-store-form');
+    const storeNameInput = document.getElementById('store-name-input');
+    const comparisonTable = document.getElementById('comparison-table');
+    const theadRow = comparisonTable.querySelector('thead tr');
+    const tbodyComp = comparisonTable.querySelector('tbody');
+
+    onSnapshot(COMP_DOC, async docSnap => {
+      if (!docSnap.exists()) {
+        await setDoc(COMP_DOC, { products: [], stores: [] });
+      } else {
+        const data = docSnap.data();
+        renderComparison(data.products || [], data.stores || []);
+      }
+    });
+
+    addProductForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const productName = productNameInput.value.trim();
+      if (!productName) return;
+      const docSnap = await getDoc(COMP_DOC);
+      const data = docSnap.exists() ? docSnap.data() : { products: [], stores: [] };
+      const newProducts = [...data.products, productName];
+      const newStores = data.stores.map(s => ({
+        name: s.name,
+        prices: [...s.prices, ""]
+      }));
+      await updateDoc(COMP_DOC, { products: newProducts, stores: newStores });
+      productNameInput.value = '';
+    });
+
+    addStoreForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const storeName = storeNameInput.value.trim();
+      if (!storeName) return;
+      const docSnap = await getDoc(COMP_DOC);
+      const data = docSnap.exists() ? docSnap.data() : { products: [], stores: [] };
+      const newStoreObj = { name: storeName, prices: Array(data.products.length).fill("") };
+      const newStores = [...data.stores, newStoreObj];
+      await updateDoc(COMP_DOC, { stores: newStores });
+      storeNameInput.value = '';
+    });
+
+    function renderComparison(products, stores) {
+      theadRow.innerHTML = '<th><span>Supermercato</span></th>';
+      tbodyComp.innerHTML = '';
+
+      // Rebuild header row
+      products.forEach((prod, colIdx) => {
+        const th = document.createElement('th');
+        th.style.display = 'flex';
+        th.style.alignItems = 'center';
+        th.style.justifyContent = 'space-between';
+
+        const headerSpan = document.createElement('span');
+        headerSpan.textContent = prod;
+        headerSpan.style.flex = '1';
+        headerSpan.style.cursor = 'pointer';
+
+        function startProductEdit() {
+          const oldName = headerSpan.textContent;
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = oldName;
+          inputEdit.classList.add('edit-input');
+          th.replaceChild(inputEdit, headerSpan);
+          inputEdit.focus();
+
+          async function saveEdit() {
+            const newName = inputEdit.value.trim();
+            if (newName && newName !== oldName) {
+              const docSnap = await getDoc(COMP_DOC);
+              const data = docSnap.data();
+              const newProducts = data.products.slice();
+              newProducts[colIdx] = newName;
+              await updateDoc(COMP_DOC, { products: newProducts });
+            }
+            headerSpan.textContent = newName || oldName;
+            th.replaceChild(headerSpan, inputEdit);
+          }
+          inputEdit.addEventListener('blur', saveEdit);
+          inputEdit.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              saveEdit();
+            } else if (ev.key === 'Escape') {
+              th.replaceChild(headerSpan, inputEdit);
+            }
+          });
+        }
+        headerSpan.addEventListener('dblclick', startProductEdit);
+        headerSpan.addEventListener('touchend', e => {
+          e.preventDefault();
+          startProductEdit();
+        });
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.textContent = '✕';
+        deleteBtn.classList.add('delete-button');
+        deleteBtn.title = 'Rimuovi prodotto';
+        deleteBtn.style.marginLeft = '6px';
+        deleteBtn.addEventListener('click', async () => {
+          const docSnap = await getDoc(COMP_DOC);
+          const data = docSnap.data();
+          const newProducts = data.products.filter((_, idx) => idx !== colIdx);
+          const newStores = data.stores.map(s => ({
+            name: s.name,
+            prices: s.prices.filter((_, pi) => pi !== colIdx)
+          }));
+          await setDoc(COMP_DOC, { products: newProducts, stores: newStores });
+        });
+
+        th.appendChild(headerSpan);
+        th.appendChild(deleteBtn);
+        theadRow.appendChild(th);
+      });
+
+      // Build rows
+      stores.forEach((storeObj, rowIdx) => {
+        const tr = document.createElement('tr');
+
+        // First cell: store name
+        const tdName = document.createElement('td');
+        tdName.style.display = 'flex';
+        tdName.style.alignItems = 'center';
+        tdName.style.justifyContent = 'space-between';
+
+        const nameSpan = document.createElement('span');
+        nameSpan.textContent = storeObj.name;
+        nameSpan.style.flex = '1';
+        nameSpan.style.cursor = 'pointer';
+
+        function startStoreEdit() {
+          const oldName = nameSpan.textContent;
+          const inputEdit = document.createElement('input');
+          inputEdit.type = 'text';
+          inputEdit.value = oldName;
+          inputEdit.classList.add('edit-input');
+          tdName.replaceChild(inputEdit, nameSpan);
+          inputEdit.focus();
+
+          async function saveEdit() {
+            const newName = inputEdit.value.trim();
+            if (newName && newName !== oldName) {
+              const docSnap = await getDoc(COMP_DOC);
+              const data = docSnap.data();
+              const newStores = data.stores.slice();
+              newStores[rowIdx].name = newName;
+              await updateDoc(COMP_DOC, { stores: newStores });
+            }
+            nameSpan.textContent = newName || oldName;
+            tdName.replaceChild(nameSpan, inputEdit);
+          }
+          inputEdit.addEventListener('blur', saveEdit);
+          inputEdit.addEventListener('keydown', ev => {
+            if (ev.key === 'Enter') {
+              ev.preventDefault();
+              saveEdit();
+            } else if (ev.key === 'Escape') {
+              tdName.replaceChild(nameSpan, inputEdit);
+            }
+          });
+        }
+        nameSpan.addEventListener('dblclick', startStoreEdit);
+        nameSpan.addEventListener('touchend', e => {
+          e.preventDefault();
+          startStoreEdit();
+        });
+
+        const deleteBtn2 = document.createElement('button');
+        deleteBtn2.textContent = '✕';
+        deleteBtn2.classList.add('delete-button');
+        deleteBtn2.title = 'Rimuovi supermercato';
+        deleteBtn2.addEventListener('click', async () => {
+          const docSnap = await getDoc(COMP_DOC);
+          const data = docSnap.data();
+          const newStores = data.stores.filter((_, idx) => idx !== rowIdx);
+          await updateDoc(COMP_DOC, { stores: newStores });
+        });
+
+        tdName.appendChild(nameSpan);
+        tdName.appendChild(deleteBtn2);
+        tr.appendChild(tdName);
+
+        // Price cells
+        products.forEach((prod, colIdx) => {
+          const td = document.createElement('td');
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.placeholder = '€';
+          input.value = storeObj.prices[colIdx] || "";
+          input.addEventListener('input', async () => {
+            const docSnap = await getDoc(COMP_DOC);
+            const data = docSnap.data();
+            const newStores = data.stores.slice();
+            newStores[rowIdx].prices[colIdx] = input.value;
+            await updateDoc(COMP_DOC, { stores: newStores });
+          });
+          td.appendChild(input);
+          tr.appendChild(td);
+        });
+
+        tbodyComp.appendChild(tr);
+      });
+
+      updateHighlights();
+    }
+
+    function updateHighlights() {
+      const rows = Array.from(tbodyComp.rows);
+      const colCount = theadRow.querySelectorAll('th').length - 1;
+      rows.forEach(row => {
+        Array.from(row.children).forEach(cell => cell.classList.remove('lowest-price'));
+      });
+      for (let c = 1; c <= colCount; c++) {
+        let minPrice = Infinity;
+        let cells = [];
+        rows.forEach(row => {
+          const cell = row.children[c];
+          const val = parseFloat(cell.querySelector('input').value.replace(',', '.'));
+          if (!isNaN(val)) {
+            if (val < minPrice) {
+              minPrice = val;
+              cells = [cell];
+            } else if (val === minPrice) {
+              cells.push(cell);
+            }
+          }
+        });
+        cells.forEach(cell => cell.classList.add('lowest-price'));
+      }
+    }
   </script>
 </body>
 </html>
