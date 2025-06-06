@@ -151,13 +151,14 @@
       apiKey: "AIzaSyAx1f5ZGon--RhyWwlKDHHx2PX7znz4Y4c",
       authDomain: "todosite-50224.firebaseapp.com",
       projectId: "todosite-50224",
-      storageBucket: "todosite-50224.appspot.com",
+      storageBucket: "todosite-50224.firebasestorage.app",
       messagingSenderId: "1007826815171",
       appId: "1:1007826815171:web:d350392640ad08c0fbba76",
       measurementId: "G-BT9DJBN90Q"
-    };
+      };
 
     const app = initializeApp(firebaseConfig);
+    const analytics = getAnalytics(app);
     const db = getFirestore(app);
     const WISHLIST = collection(db, 'wishlistItems');
 
