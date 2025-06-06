@@ -707,7 +707,8 @@
       onSnapshot,
       query,
       orderBy,
-      serverTimestamp
+      serverTimestamp,
+      getDoc
     } from "https://www.gstatic.com/firebasejs/11.9.0/firebase-firestore.js";
 
     // CONFIGURAZIONE FIREBASE (Firestore)
@@ -874,10 +875,12 @@
       deleteListBtn.textContent = 'Elimina Lista';
       deleteListBtn.addEventListener('click', async () => {
         if (confirm(`Eliminare la lista “${listObj.name}”?`)) {
+          // Elimina tutti i task sottostanti
           const tasksCol = collection(db, 'todoLists', listObj.id, 'tasks');
           const snapshot = await getDocs(tasksCol);
           const deletes = snapshot.docs.map(d => deleteDoc(doc(db, 'todoLists', listObj.id, 'tasks', d.id)));
           await Promise.all(deletes);
+          // Elimina la lista stessa
           await deleteDoc(doc(db, 'todoLists', listObj.id));
         }
       });
